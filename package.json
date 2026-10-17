@@ -18,7 +18,9 @@
     "check": "pnpm fixtures && pnpm typecheck && pnpm test && pnpm build",
     "deploy:dry": "wrangler deploy --env production --dry-run",
     "deploy": "wrangler deploy --env production",
-    "deploy:staging": "wrangler deploy --env staging"
+    "deploy:staging": "wrangler deploy --env staging",
+    "format": "prettier --write apps/web/src packages/calendar/src tests/unit tests/e2e *.ts",
+    "format:check": "prettier --check apps/web/src packages/calendar/src tests/unit tests/e2e *.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
@@ -27,6 +29,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
+    "prettier": "3.9.10",
     "typescript": "7.0.2",
     "vite": "8.3.4",
     "vitest": "5.0.5",
