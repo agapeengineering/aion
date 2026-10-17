@@ -1,6 +1,6 @@
 # Aion — web release specification
 
-Version: **1.1.0**. Status: reviewed R1 scope and behavior; implementation and verification pending. Maintained by Agape Engineering. Updated 2026-10-17. This revision links the specified calendar/clock contract and audited shared fixtures; application implementation remains pending.
+Version: **1.2.0**. Status: reviewed R1 scope/behavior implemented for early web 0.1.0; verification scope/remaining human-device checks are recorded separately. Maintained by Agape Engineering. Updated 2026-10-17. See the [web verification record](../testing/web-verification.md) and [release notes](../releases/0.1.0.md) for actual evidence and remaining limits.
 
 This document is the authoritative discovery brief, product definition, requirements and verification map for the first web release. See the [product overview](../product/README.md) and [architecture overview](../architecture/overview.md). Acceptance targets describe intended behavior, not measured results or shipped features.
 
@@ -46,7 +46,7 @@ Web ships first. Native release sequence and supported device versions are deter
 
 Agape Engineering maintainers own requirement review, release decisions and maintenance. R1 requires verified Must requirements, a public working application and a usable exported wallpaper. Native platforms are advertised only after usable downloadable artifacts exist and supported ambient behavior has real-device evidence.
 
-Original source is [MIT licensed](../../LICENSE). This baseline includes no third-party code, fonts or dependencies. Review dependency/asset licenses and notices when they are added. Hosting/deployment/recovery, release support contact and later platform signing/distribution arrangements must be ready before their applicable releases.
+Original source is [MIT licensed](../../LICENSE). Runtime React and self-hosted fonts retain the licenses in [third-party notices](../../THIRD_PARTY_NOTICES.md). Review licenses/notices when dependencies or assets change. Hosting/deployment/recovery, release support contact and later platform signing/distribution arrangements must be ready before their applicable releases.
 
 ## Software requirements
 
@@ -103,7 +103,7 @@ No auth/session token, API contract, backend retry, database migration, account 
 | Release | FR-012 | Source/license, exact revision/build, authorized deployment, rollback, live smoke and support links. |
 | Ambient native validation | FR-013 | Future physical-device date-refresh evidence; not a web gate. |
 
-The calendar/clock corpus arithmetic and display-sequence expectations have passed a standalone fixture audit (see linked audit record). Application implementation and all application/device evidence groups remain **pending**. A test plan is not a passing test. Release quality requirements remain gates on software; they need not be executed to review this specification.
+The calendar/clock corpus arithmetic and display-sequence expectations have passed a standalone fixture audit (see linked audit record). The application consumer and web journeys are implemented and checked within the scope recorded in [web verification](../testing/web-verification.md); physical-device/human validation remains explicitly **pending**. A test plan is not a passing test. Release quality requirements remain gates on software; they need not be executed to review this specification.
 
 ## Design decisions
 
@@ -119,14 +119,14 @@ The calendar/clock corpus arithmetic and display-sequence expectations have pass
 
 ## Remaining design and verification work
 
-- Calendar/clock contract and shared fixture expectations are specified and independently audited; implement and test consumers against them.
-- Review a versioned coded prototype, including mobile layout, export presets, validation/errors, keyboard operation and long Spanish copy.
-- Establish a pinned web toolchain, lockfile and reproducible local/CI checks.
-- Select static hosting and document deployment, rollback, recovery and operating ownership.
-- Verify the full web release before scheduling native integrations.
+- Calendar/clock contract, shared expectations and TypeScript consumer tests are implemented and checked.
+- Coded prototype and implemented EN/ES states are agent-inspected and browser-tested; the product-owner walkthrough remains pending.
+- Pinned web toolchain, lockfile and local/CI checks are supplied; record actual CI run evidence per release.
+- Cloudflare Static Assets is selected in ADR-0001, with deployment/rollback/recovery and operating ownership documented.
+- Observe the early web release and complete remaining human/device validation before scheduling native integrations.
 - Validate native ambient behavior on actual devices and record limitations before advertising it.
 
-These are planned deliverables, not completed implementation or test evidence. Numerical quality targets and product changes are maintained alongside affected tests and design decisions.
+Completed versus pending scope is distinguished in the linked verification/release records. Numerical quality targets and product changes are maintained alongside affected tests and design decisions.
 
 ## Revision history
 
@@ -134,3 +134,5 @@ These are planned deliverables, not completed implementation or test evidence. N
 - 1.0.1 — Editorial cleanup for public contributors; removed internal task references, personal planning context and private workflow details. Requirement IDs and product behavior unchanged.
 
 - 1.1.0 — Specify the subordinate calendar/clock contract, supported input range and shared golden fixtures with an independent audit; no application implementation or release implied.
+
+- 1.2.0 — Implement early web R1 with reproducible checks, explicit browser-engine evidence and remaining human/device validation; adopt Cloudflare Static Assets in ADR-0001.

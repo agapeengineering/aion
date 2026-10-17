@@ -1,17 +1,25 @@
 # Aion repository instructions
 
-Read README.md and docs/requirements/web-release-specification.md before changes. Read the relevant architecture decisions and actual manifests when they exist.
+Read README.md, docs/requirements/web-release-specification.md and the relevant architecture/contract before behavior changes. Engineering language is English; product content is EN/ES.
 
-- Aion is free, local-only and bilingual (English/Spanish). No backend, accounts, authentication, cloud sync, analytics, AI, journal, goals or streaks.
-- The reviewed specification owns behavior. Keep stable FR/NFR IDs and update requirements, tests and implementation together.
-- The web countdown ticks; its values remain approximate and the lifespan is a chosen assumption. Never use private birth dates in examples, fixtures, requests or logs.
-- One active implementation slice. Review the coded prototype before production UI implementation. Do not create native modules until their phase is scheduled.
-- Repository documents own product behavior, contracts, code, tests and release evidence. Use GitHub Issues for public feedback; maintainers may track execution separately.
-- Write for public contributors. Do not include internal tracker IDs/links, private planning notes, local filesystem paths, personal conversations/preferences or unrelated project priorities. Express accepted preferences as product requirements with rationale. Keep internal mappings in the private planning system.
-- Keep credentials, signing keys, local settings and personal data outside Git. Use synthetic test data.
-- Do not commit, push, merge, deploy, enroll or purchase without user authorization. Preserve unrelated changes.
-- Run meaningful checks appropriate to the change. Never describe a planned check, prototype or build as released evidence.
+## Boundaries
 
-## Current baseline
+- Aion is free and local-only. No backend, account/authentication, cloud sync, analytics, advertising, AI, journal, goals or streaks.
+- Product behavior and stable FR/NFR IDs live in repository specifications. Keep implementation, contracts, tests and release evidence aligned.
+- Public artifacts must stand alone: no internal tracker IDs/links, private planning notes, local machine paths, personal conversations/preferences or unrelated priorities. Express decisions as product behavior and rationale; keep private execution mappings separately.
+- Use synthetic data. No private birth dates/settings/credentials in examples, requests, telemetry or logs. Unsupported storage formats are not silently overwritten.
+- Preserve unrelated changes; one active implementation slice/writer. External commit/push/merge/deploy/purchase actions require user authorization.
+- Review the actual diff and execute meaningful checks. Never equate engine automation with physical-device/human validation.
 
-Specification and fixture-audit baseline; no application manifests, runnable app, dependencies or CI yet. Read docs/requirements/calendar-clock-contract.md for calculation detail and docs/testing/calendar-clock-fixtures.md for the shared golden data. Run `node tools/verify-calendar-clock-fixtures.mjs --self-test` after contract/fixture edits; this is a fixture audit, not application test evidence. Next setup work reviews a coded prototype and establishes the reproducible web toolchain/CI. Do not invent application commands until implemented.
+## Layout and commands
+
+- `apps/web/src`: React UI, versioned settings, i18n, canvas grid and local PNG export.
+- `packages/calendar/src`: pure clock-injected domain and display controller, no browser/storage dependency.
+- `tests/fixtures/calendar-clock/v1.json`: golden shared expectations. Do not regenerate to hide regressions.
+- `docs/requirements/calendar-clock-contract.md`: exact arithmetic, validation and lifecycle conventions.
+
+Use Node 24.19.0 and pnpm 11.25.0. `pnpm install --frozen-lockfile`; `pnpm dev`; `pnpm check` (fixture/type/unit/build); `pnpm test:e2e` (production browser flows). Install Playwright engines as documented in docs/development/setup.md. Application logic must pass the shared fixture consumer tests; fixture edits also run `pnpm fixtures`.
+
+Visible ticking derives from current clock snapshots, with pause/resume and no per-second grid redraw. Nominal date-only subday totals remain approximate. Keep font dependencies self-hosted and include third-party notices.
+
+Build output is generated `apps/web/dist`, never tracked. `pnpm deploy:dry`, `pnpm deploy:staging`, `pnpm deploy` use Wrangler static assets, not a data backend. Follow docs/operations/web-deployment.md; preserve built artifact identity across promotion. No automated deployment credentials are stored in CI. Actual-device/accessibility/user-walkthrough limits live in docs/testing/web-verification.md.

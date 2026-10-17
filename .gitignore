@@ -21,3 +21,6 @@ test-results/
 # Local personal data (synthetic tracked fixtures belong in tests/)
 .local/
 private/
+.wrangler/
+.dev.vars*
+.env.*.local

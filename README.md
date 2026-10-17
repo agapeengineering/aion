@@ -1,32 +1,55 @@
 # Aion by Agape
 
-A quiet life-in-weeks calendar: see lived weeks, the present week and the time ahead under a lifespan you choose.
+**[Open Aion →](https://aion.agape.engineering)** · [Español](https://aion.agape.engineering/es)
 
-Free and open source. English and Spanish. Your birth date and preferences stay on your device; no account, backend or cloud sync.
+A quiet life-in-weeks calendar. See the weeks behind you, the present week and the time ahead under a lifespan you choose.
 
-## Status
+Free, open source and bilingual. Your birth date and preferences stay in your browser. No accounts, backend, cloud sync, advertising or product analytics.
 
-Planning and repository baseline. **No runnable application or published release yet.** The intended web address is `aion.agape.engineering`; it is not a deployment link. Native downloads/store listings will be linked only when they exist.
+## Web 0.1.0
 
-The first web release includes a life grid, all seven lived/remaining time units, a ticking approximate countdown, local settings/reset, optional hiding of remaining figures, original bilingual phrases and simple PNG wallpaper export. A chosen lifespan is an assumption, never a prediction.
+- Two inputs: date of birth and chosen lifespan, with an editable 90-year default.
+- Lived/current/future week grid, accessible text summary and exact interval exploration.
+- Years, months, weeks, days, hours, minutes and seconds; weeks is the primary view.
+- Ticking approximate countdown with pause/resume and optional hidden remaining figures.
+- Local save/edit/reset, clear storage-error states and local cross-tab updates.
+- Original English/Spanish phrases and local phone/desktop PNG wallpaper export.
+- Self-hosted fonts, a privacy explanation, source/license and public feedback route.
 
-Later native releases aim to offer widgets and supported automatically updating wallpaper. Feasibility and release order require separate device validation; web export is manual.
+A lifespan is a visualization assumption, never a prediction. Another browser/device starts fresh: enter the two details again. PNGs are static images applied manually; native widgets and automatic wallpaper updates are later work.
+
+This is an early release. Chromium, Firefox and WebKit journeys are automated; physical iPhone/Safari, VoiceOver and the product-owner walkthrough remain explicit validation work. See [release notes](docs/releases/0.1.0.md) and [verification limits](docs/testing/web-verification.md).
+
+## Run locally
+
+Use Node 24.19.0 and pnpm 11.25.0:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+No environment variables, user accounts or credentials are needed. For checks:
+
+```sh
+pnpm check
+pnpm exec playwright install chromium firefox webkit
+pnpm test:e2e
+```
+
+See [development setup](docs/development/setup.md) for CI, offline-after-load limits and deployment checks.
 
 ## Documentation
 
-- [Reviewed R1 specification](docs/requirements/web-release-specification.md)
-- [Calendar/clock contract](docs/requirements/calendar-clock-contract.md) · [Shared fixtures and audit](docs/testing/calendar-clock-fixtures.md)
-- [Product context](docs/product/README.md)
-- [Architecture and decisions](docs/architecture/overview.md)
-- [Development setup/status](docs/development/setup.md)
+- [R1 specification](docs/requirements/web-release-specification.md)
+- [Calendar/clock contract](docs/requirements/calendar-clock-contract.md) · [shared fixture audit](docs/testing/calendar-clock-fixtures.md)
+- [Architecture](docs/architecture/overview.md) · [static hosting decision](docs/architecture/decisions/0001-static-web-release.md)
+- [Deploy/rollback/recovery](docs/operations/web-deployment.md)
+- [Product overview](docs/product/README.md) · [interface study/review](docs/design/interface-review.md)
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
-## Development
+## Feedback and license
 
-There is no application install/build/dev command yet. Shared calendar/clock expectations and a standalone fixture audit are available; the next setup work reviews a coded UI prototype and establishes the React/TypeScript/Vite toolchain. Run `node tools/verify-calendar-clock-fixtures.mjs --self-test` to audit the fixture data without installing dependencies. See the setup document before adding dependencies. Native components are added when scheduled; releases remain independent within this product repository.
+Use [GitHub Issues](https://github.com/agapeengineering/aion/issues) for public bugs and suggestions. Leave out birth dates and other private information. Sensitive reports use [private vulnerability reporting](https://github.com/agapeengineering/aion/security/advisories/new).
 
-## Contact and license
-
-Use [GitHub Issues](https://github.com/agapeengineering/aion/issues) for public bugs and suggestions; do not include birth dates, credentials or private settings. See SECURITY.md for sensitive reports.
-
-Original source is available under the [MIT License](LICENSE). Agape/Aion names and marks are not granted as trademarks by the source license. Third-party assets/dependencies retain their own licenses and require attribution review before addition.
+Original source: [MIT](LICENSE). Fonts/dependencies retain their own [licenses and notices](THIRD_PARTY_NOTICES.md). Agape/Aion names and marks are not granted as trademarks by the source license.

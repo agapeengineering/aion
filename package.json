@@ -1,0 +1,35 @@
+{
+  "name": "aion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24.15 <27"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build && node tools/finalize-web-build.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "fixtures": "node tools/verify-calendar-clock-fixtures.mjs --self-test",
+    "check": "pnpm fixtures && pnpm typecheck && pnpm test && pnpm build",
+    "deploy:dry": "wrangler deploy --env production --dry-run",
+    "deploy": "wrangler deploy --env production",
+    "deploy:staging": "wrangler deploy --env staging"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.5",
+    "wrangler": "4.151.1"
+  }
+}

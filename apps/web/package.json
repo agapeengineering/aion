@@ -1,0 +1,13 @@
+{
+  "name": "@aion/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aion/calendar": "workspace:*",
+    "@fontsource/inter": "5.3.0",
+    "@fontsource/geist-mono": "5.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}

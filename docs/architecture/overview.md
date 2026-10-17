@@ -1,21 +1,24 @@
 # Architecture overview
 
-Status: initial design boundary; implementation, hosting and detailed design remain pending. Maintainer: Agape Engineering. Date: 2026-10-17.
+Aion's web release is a client-only React/TypeScript/Vite application. See [ADR-0001](decisions/0001-static-web-release.md), the [R1 specification](../requirements/web-release-specification.md) and [calendar/clock contract](../requirements/calendar-clock-contract.md).
 
-Aion is one product repository with independently buildable clients as they are introduced. Web starts with React, TypeScript and Vite. No backend, API, authentication, account, database server, cloud sync or queue is required. No package versions/toolchain are selected by this documentation baseline.
+## Modules and data flow
 
-Browser inputs and local settings feed calendar/clock domain logic, grid/statistics UI and local PNG generation. Personal data stays inside the browser. Treat local settings as untrusted input; validate schema versions and data. Only static application assets are requested; no private dates/settings in requests, logs or URLs. Self-host fonts when added.
+- `packages/calendar/src/index.ts`: pure Gregorian date calculation, injected local-clock snapshot, all totals and display pause/visibility transitions.
+- `apps/web/src/storage.ts`: versioned local settings, validation and failure/newer-format protection.
+- `apps/web/src/App.tsx`: bilingual onboarding/settings, lifecycle clock refresh, statistics, privacy/reset/export dialogs and local tab coordination.
+- `apps/web/src/Grid.tsx`: fixed-size canvas overview/detail, non-color cues, accessible summary and exact keyboard-selectable date intervals. Date/grid painting is separate from per-second text refresh.
+- `apps/web/src/export.ts`: one coherent live snapshot into a local phone/desktop PNG, honoring hidden remaining figures and omitting birth date.
+- `apps/web/src/i18n.ts`: EN/ES content and original phrase bank; self-hosted font assets are bundled at build time.
 
-The ticking display derives values from current local clock snapshots, not an accumulated interval count. Date-based domain calculations and visible per-second text updates are separate; do not redraw the grid every second. Refer to FR-009 and the calendar definitions in the reviewed specification.
+There is no backend/API/authentication/cloud sync, queue, analytics or server-side personal data. The only initial requests are static assets. Settings and malformed/unknown storage are untrusted; validate before use, protect unsupported versions and use session-only fallback when saving is denied. Reset removes only the app-owned setting key; downloaded images remain user-controlled.
 
-Use a small pure calendar module with language-neutral fixtures; UI, storage and export depend on it. Keep dependencies directed toward the domain module. Do not share native calculation code through FFI just to reuse date formulas; future native ports can use shared fixtures.
+## Build and delivery
 
-## Decisions still needed
+One pnpm product workspace; native clients are added only when scheduled and retain separate artifacts. Pinned Node/pnpm/dependencies and the lockfile make setup reproducible. GitHub Actions runs fixture/type/unit/build/browser checks with read-only repository access. Publication is a separate authorized Wrangler action; CI has no deployment credentials.
 
-- Static hosting: select the deployment target and record cost, operating ownership, deployment/rollback and recovery before provisioning.
-- Calendar model: [contract](../requirements/calendar-clock-contract.md) and [shared fixtures/audit](../testing/calendar-clock-fixtures.md) now specify the calculation boundary and supported date range. Production consumers remain unimplemented.
-- Interface design: versioned coded prototype, responsive grid grouping, export dimensions and review findings.
-- Build and verification: pinned web toolchain, lockfile, clean-checkout checks and CI.
-- Future native phase: device baselines, ambient feasibility and actual platform scheduling.
+Cloudflare serves the static build with HTTPS, a restrictive CSP, no-referrer and nosniff headers. English and Spanish entry documents have appropriate language/title metadata. `version.json` identifies source revision/build cleanliness. Stage and promote the same built directory; see the [operations runbook](../operations/web-deployment.md) and [verification record](../testing/web-verification.md).
 
-Record accepted architecture decisions in `docs/architecture/decisions/`. No deployment or paid account action is authorized by this document.
+## Known limits
+
+Browser-engine tests are not physical iPhone or VoiceOver validation. Those checks and the product-owner walkthrough are recorded explicitly rather than inferred. Native ambient integration, offline-first installation and further export controls remain separate work. Approximate wall-clock totals can jump with clock/zone/DST changes as specified.

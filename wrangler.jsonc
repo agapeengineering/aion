@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "aion",
+  "compatibility_date": "2026-10-17",
+  "assets": {
+    "directory": "./apps/web/dist",
+    "not_found_handling": "single-page-application"
+  },
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "aion.agape.engineering",
+      "custom_domain": true
+    }
+  ],
+  "env": {
+    "staging": {
+      "name": "aion-staging",
+      "workers_dev": true,
+      "routes": [],
+      "assets": {
+        "directory": "./apps/web/dist",
+        "not_found_handling": "single-page-application"
+      }
+    },
+    "production": {
+      "name": "aion",
+      "workers_dev": true,
+      "routes": [
+        {
+          "pattern": "aion.agape.engineering",
+          "custom_domain": true
+        }
+      ],
+      "assets": {
+        "directory": "./apps/web/dist",
+        "not_found_handling": "single-page-application"
+      }
+    }
+  }
+}
