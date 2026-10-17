@@ -7,7 +7,7 @@ Date: 2026-10-17. This record describes executable and agent inspection evidence
 - Calendar fixture audit: 66 snapshots, 12 clock traces/40 steps, six zoned source clocks; five deliberately corrupted datasets rejected.
 - Application unit tests: **82 passed**, including every shared calendar snapshot/display trace and storage validation/denied-write/newer-format handling.
 - TypeScript check and production build: passed with Node 24.19.0 and pnpm 11.25.0.
-- Browser suite: **33 passed on Cloudflare HTTPS staging**, 11 journeys in each of Chromium, Firefox and WebKit (Playwright 1.64.1).
+- Browser suite: **33 passed on Cloudflare HTTPS staging and again on the production Workers hostname**, 11 journeys in each of Chromium, Firefox and WebKit (Playwright 1.64.1).
 - EN/ES setup, invalid/future dates and focus, edit/reload, privacy/modal escape, reset cancel/confirm and preservation of unrelated origin storage.
 - Seven counter units, ticking/pause/resume/date catch-up, remaining zero beyond horizon and exact final-week interval exploration.
 - Hidden remaining figures persist and are omitted from statistics/accessibility summary/export; a real downloaded PNG has valid signature/dimensions. Phone and desktop previews have their specified dimensions.
