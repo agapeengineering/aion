@@ -1,0 +1,8 @@
+**
+!apps/
+!apps/web/
+!apps/web/dist/
+!apps/web/dist/**
+!deploy/
+!deploy/web/
+!deploy/web/**

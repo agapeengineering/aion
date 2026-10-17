@@ -4,7 +4,7 @@
 
 A quiet life-in-weeks calendar. See the weeks behind you, the present week and the time ahead under a lifespan you choose.
 
-Free, open source and bilingual. Your birth date and preferences stay in your browser. No accounts, backend, cloud sync, advertising or product analytics.
+Free, open source and bilingual. In the current public release, your birth date and preferences stay in your browser. Accounts and cloud sync are not deployed. No advertising or product analytics.
 
 ## Web 0.1.0
 
@@ -39,12 +39,18 @@ pnpm test:e2e
 
 See [development setup](docs/development/setup.md) for CI, offline-after-load limits and deployment checks.
 
+## Backend foundation
+
+The accepted R2 account/sync/reminder release starts with a local FastAPI/PostgreSQL foundation, explicit migrations, a probe-only worker and Docker Compose. See [backend setup](docs/development/backend-setup.md) for locked installation, real-PostgreSQL checks and local container smoke. [Authentication examples](docs/api/authentication-contract.md) and the [EN/ES account study](docs/design/account-flow.html) prepare the next implementation slice; no account or mail endpoints are working yet. This foundation does not alter the live site or configure cloud/email services.
+
 ## Documentation
 
 - [R1 specification](docs/requirements/web-release-specification.md)
+- [Accepted R2 specification: accounts, sync and reminders](docs/requirements/backend-release-specification.md) · [backend decision](docs/architecture/decisions/0002-optional-account-backend.md) — implementation pending; current web release remains local-only
 - [Calendar/clock contract](docs/requirements/calendar-clock-contract.md) · [shared fixture audit](docs/testing/calendar-clock-fixtures.md)
 - [Architecture](docs/architecture/overview.md) · [static hosting decision](docs/architecture/decisions/0001-static-web-release.md)
 - [Deploy/rollback/recovery](docs/operations/web-deployment.md)
+- [Backend setup](docs/development/backend-setup.md) · [foundation verification](docs/testing/backend-foundation.md) · [implemented API](docs/api/openapi.json)
 - [Product overview](docs/product/README.md) · [interface study/review](docs/design/interface-review.md)
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 

@@ -1,0 +1,120 @@
+# Development/foundation stack only. No public ports, cloud configuration or mail credentials.
+name: aion-foundation
+
+x-backend: &backend
+  image: aion-backend:foundation
+  build:
+    context: ../apps/backend
+  environment:
+    AION_DATABASE_URL_FILE: /run/secrets/database_url
+  secrets:
+    - database_url
+  read_only: true
+  tmpfs:
+    - /tmp:size=32m,mode=1777
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  networks: [database]
+  mem_limit: 256m
+  cpus: 0.5
+  pids_limit: 128
+  logging:
+    driver: json-file
+    options: {max-size: "5m", max-file: "2"}
+
+services:
+  postgres:
+    image: postgres:18.3-bookworm@sha256:80630f83606d8db77d30b3851b16a9f78be2d0d4dda6f7b82a1fdca5ebe3acba
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password, app_database_password]
+    volumes:
+      - database:/var/lib/postgresql
+      - ./postgres/init-aion.sh:/docker-entrypoint-initdb.d/10-aion.sh:ro
+    command: [postgres, -c, log_statement=none, -c, log_min_error_statement=panic]
+    networks: [database]
+    restart: unless-stopped
+    mem_limit: 384m
+    cpus: 0.5
+    pids_limit: 128
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "2"}
+
+  migrate:
+    <<: *backend
+    command: [alembic, upgrade, head]
+    restart: "no"
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  api:
+    <<: *backend
+    networks: [database, web]
+    restart: unless-stopped
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -m, aion.check, api]
+      interval: 10s
+      timeout: 6s
+      retries: 3
+      start_period: 10s
+
+  worker:
+    <<: *backend
+    command: [python, -m, aion.worker]
+    restart: unless-stopped
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -m, aion.check, worker]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+  web:
+    image: aion-web:foundation
+    build:
+      context: ..
+      dockerfile: deploy/web/Dockerfile
+    networks: [web]
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 64m
+    cpus: 0.25
+    pids_limit: 64
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "2"}
+
+networks:
+  database: {internal: true}
+  web: {}
+volumes:
+  database: {}
+secrets:
+  postgres_password:
+    file: ../.local/backend/postgres-password
+  app_database_password:
+    file: ../.local/backend/app-password
+  database_url:
+    file: ../.local/backend/database-url-container

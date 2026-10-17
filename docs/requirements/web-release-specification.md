@@ -4,6 +4,8 @@ Version: **1.2.0**. Status: reviewed R1 scope/behavior implemented for early web
 
 This document is the authoritative discovery brief, product definition, requirements and verification map for the first web release. See the [product overview](../product/README.md) and [architecture overview](../architecture/overview.md). Acceptance targets describe intended behavior, not measured results or shipped features.
 
+**Accepted next release:** the [R2 backend amendment](backend-release-specification.md) v1.0.0 was accepted on 2026-10-17 for optional verified accounts, settings sync and opt-in email reminders. Its override map governs R2 implementation. R1 remains deployed; acceptance does not retroactively change its behavior or historical release evidence.
+
 ## Problem and product rationale
 
 A life calendar that requires deliberate visits can be easy to forget. Aion aims to make finite time visible during ordinary device use, with a week grid, a clearly labeled chosen lifespan and simple time summaries. Native widgets and supported wallpaper updates are the longer-term ambient surfaces; the first web release offers manual wallpaper export.

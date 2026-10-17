@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aion · account flow study</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #faf6ee;
+        --ink: #1a1a1a;
+        --muted: #62584d;
+        --rule: #d7ccba;
+        --accent: #943f1e;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font:
+          16px/1.6 system-ui,
+          sans-serif;
+      }
+      header,
+      main,
+      footer {
+        max-width: 1120px;
+        margin: auto;
+        padding: 26px 36px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .brand {
+        font:
+          42px/1 Georgia,
+          serif;
+        letter-spacing: -3px;
+      }
+      .brand span {
+        color: var(--accent);
+      }
+      .eyebrow {
+        color: var(--muted);
+        font:
+          12px/1.6 ui-monospace,
+          monospace;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+      main {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: 60px;
+        min-height: 650px;
+        padding-top: 50px;
+      }
+      aside p {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      h1 {
+        font:
+          44px/1.1 Georgia,
+          serif;
+        letter-spacing: -1px;
+        margin: 18px 0 22px;
+      }
+      h2 {
+        font:
+          24px/1.2 Georgia,
+          serif;
+        margin: 0 0 8px;
+      }
+      p {
+        max-width: 60ch;
+      }
+      .panel {
+        border-top: 3px solid var(--ink);
+        padding-top: 24px;
+      }
+      .notice {
+        padding: 14px 18px;
+        border-left: 3px solid var(--accent);
+        background: #f0e8da;
+        font-size: 14px;
+      }
+      label {
+        display: block;
+        margin: 20px 0 8px;
+      }
+      input,
+      select,
+      button {
+        font: inherit;
+        max-width: 100%;
+      }
+      input,
+      select {
+        display: block;
+        width: 100%;
+        min-height: 48px;
+        padding: 10px 12px;
+        border: 1px solid #837664;
+        background: transparent;
+        color: inherit;
+        border-radius: 0;
+      }
+      button {
+        cursor: pointer;
+        min-height: 46px;
+        padding: 10px 18px;
+        background: transparent;
+        border: 1px solid var(--ink);
+        color: inherit;
+      }
+      .primary {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      button:focus-visible,
+      select:focus-visible,
+      input:focus-visible,
+      h1:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 4px;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 26px 0;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin: 24px 0;
+      }
+      .card {
+        border: 1px solid var(--rule);
+        padding: 20px;
+        overflow-wrap: anywhere;
+      }
+      .card p {
+        margin: 6px 0;
+      }
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      #error {
+        color: var(--accent);
+        min-height: 1.6em;
+      }
+      footer {
+        border-top: 1px solid var(--rule);
+        color: var(--muted);
+        font-size: 13px;
+      }
+      @media (max-width: 700px) {
+        header,
+        main,
+        footer {
+          padding: 22px;
+        }
+        main {
+          display: block;
+        }
+        aside {
+          margin-bottom: 32px;
+        }
+        h1 {
+          font-size: 36px;
+        }
+        .cards {
+          grid-template-columns: 1fr;
+        }
+        .actions {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">aion<span>.</span></div>
+      <button id="language" type="button">Español</button>
+    </header>
+    <main>
+      <aside>
+        <div class="eyebrow" id="study"></div>
+        <label for="scenario" id="scenario-label"></label
+        ><select id="scenario"></select>
+        <p id="boundary"></p>
+        <p id="fake-code" class="small"></p>
+      </aside>
+      <section class="panel" aria-labelledby="title">
+        <div class="eyebrow" id="step"></div>
+        <h1 id="title" tabindex="-1"></h1>
+        <div id="content"></div>
+        <p id="error" role="alert"></p>
+      </section>
+    </main>
+    <footer id="footer"></footer>
+    <script>
+      // A review artifact only: constants and memory, no requests/cookies/storage or real identity.
+      const copy = {
+        en: {
+          study: 'Account flow study',
+          scenario: 'Review a state',
+          boundary:
+            'Synthetic data. No account is created, no settings uploaded, and no email sent.',
+          demo: 'For this study only: enter 12345678 on the code screen.',
+          footer: 'R2 interaction study · Human review pending · Guest mode remains complete',
+          states: [
+            'On this device',
+            'Enter email',
+            'Verify email',
+            'Choose your settings',
+            'Saved to account',
+            'Conflicting edits',
+            'Offline edits',
+            'Your sessions',
+            'Delete account',
+          ],
+          guest: [
+            'A little continuity.',
+            'Your calendar works without an account. Sign in only if you want to keep your settings across devices.',
+            'Continue on this device',
+            'Save across devices',
+          ],
+          email: [
+            'Bring your calendar along.',
+            'We’ll send a code to verify that this email belongs to you. Verification does not upload your calendar or subscribe you to reminders.',
+            'Email address · synthetic',
+            'Send a code',
+            'Back',
+          ],
+          code: [
+            'Check your inbox.',
+            'Enter the eight-digit code sent to person@example.test. It expires after ten minutes. Reminders remain off.',
+            'Verification code',
+            'Verify email',
+            'Use another email',
+            'This study accepts 12345678. Try again.',
+          ],
+          import: [
+            'Which calendar is yours?',
+            'This browser and your account have different settings. Choose explicitly; neither is replaced automatically.',
+            'This browser',
+            'Account',
+            'Born 2000-01-01 · 90 years',
+            'Born 2000-01-01 · 95 years',
+            'Use account settings',
+            'Replace account settings',
+            'For a new account: save this browser’s settings',
+          ],
+          saved: [
+            'A little less to remember.',
+            'Your settings are saved to your account. Another signed-in device can load them.',
+            'Email reminders are off. Signing in never enables them.',
+            'Review sessions',
+            'Return to local guest mode',
+          ],
+          conflict: [
+            'Two edits. Your choice.',
+            'Another device changed your calendar after this device last synced. Your edit has not overwritten it.',
+            'This device · pending',
+            'Account · latest',
+            '90 years · remaining figures hidden',
+            '95 years · remaining figures visible',
+            'Keep account version',
+            'Reapply this device’s version',
+          ],
+          offline: [
+            'Still here, offline.',
+            'Your cached calendar and wallpaper export remain usable. Changes on this device are pending, not saved to your account.',
+            'Email schedules can only change online. Hiding figures here has not yet changed your emails.',
+            'Simulate reconnect with conflict',
+            'Sign out and discard pending edits',
+          ],
+          sessions: [
+            'Where you’re signed in.',
+            'This device · current session. Other browser · synthetic session.',
+            'Signing out does not unsubscribe from reminders. This browser’s account cache is cleared; offline copies on other devices cannot be erased remotely.',
+            'Revoke other session',
+            'Sign out',
+            'Delete account',
+            'Other session revoked in this study.',
+          ],
+          delete: [
+            'Leave nothing active.',
+            'Account deletion removes saved settings, revokes sessions and cancels pending email. Delivered mail cannot be recalled. Backup copies expire within 30 days.',
+            'In the real flow you must verify your email again within ten minutes, then explicitly confirm deletion.',
+            'Simulate re-verification and confirm deletion',
+            'Keep my account',
+          ],
+          replace:
+            'Replace your saved account settings with this device’s version? This study only changes its screen.',
+          discard:
+            'Discard this device’s pending changes and sign out? This study only changes its screen.',
+          deleted: 'Deletion simulated. No real account or data was changed.',
+        },
+        es: {
+          study: 'Estudio de cuentas',
+          scenario: 'Revisar un estado',
+          boundary:
+            'Datos ficticios. No se crea una cuenta, no se suben datos ni se envían correos.',
+          demo: 'Solo para este estudio: introduce 12345678 en la pantalla del código.',
+          footer:
+            'Estudio de interacción R2 · Revisión humana pendiente · El modo local sigue completo',
+          states: [
+            'En este dispositivo',
+            'Introducir correo',
+            'Verificar correo',
+            'Elegir calendario',
+            'Guardado en la cuenta',
+            'Cambios en conflicto',
+            'Cambios sin conexión',
+            'Tus sesiones',
+            'Eliminar cuenta',
+          ],
+          guest: [
+            'Un poco de continuidad.',
+            'Tu calendario funciona sin cuenta. Inicia sesión solo si quieres conservar tus ajustes entre dispositivos.',
+            'Seguir en este dispositivo',
+            'Guardar entre dispositivos',
+          ],
+          email: [
+            'Lleva tu calendario contigo.',
+            'Te enviaremos un código para verificar tu correo. Verificarlo no sube tu calendario ni activa recordatorios.',
+            'Correo electrónico · ficticio',
+            'Enviar un código',
+            'Volver',
+          ],
+          code: [
+            'Revisa tu correo.',
+            'Introduce el código de ocho dígitos enviado a person@example.test. Caduca en diez minutos. Los recordatorios siguen desactivados.',
+            'Código de verificación',
+            'Verificar correo',
+            'Usar otro correo',
+            'Este estudio acepta 12345678. Inténtalo de nuevo.',
+          ],
+          import: [
+            '¿Qué calendario es el tuyo?',
+            'Este navegador y tu cuenta tienen ajustes diferentes. Elige: ninguno se reemplaza automáticamente.',
+            'Este navegador',
+            'Cuenta',
+            'Nacimiento: 2000-01-01 · 90 años',
+            'Nacimiento: 2000-01-01 · 95 años',
+            'Usar ajustes de la cuenta',
+            'Reemplazar ajustes de la cuenta',
+            'Para una cuenta nueva: guardar los ajustes del navegador',
+          ],
+          saved: [
+            'Una cosa menos que recordar.',
+            'Tus ajustes están guardados en tu cuenta. Otro dispositivo con sesión iniciada puede cargarlos.',
+            'Los recordatorios están desactivados. Iniciar sesión nunca los activa.',
+            'Revisar sesiones',
+            'Volver al modo local',
+          ],
+          conflict: [
+            'Dos cambios. Tú eliges.',
+            'Otro dispositivo cambió tu calendario después de la última sincronización. Tus cambios no lo han sobrescrito.',
+            'Este dispositivo · pendiente',
+            'Cuenta · más reciente',
+            '90 años · cifras restantes ocultas',
+            '95 años · cifras restantes visibles',
+            'Conservar versión de la cuenta',
+            'Volver a aplicar la versión de este dispositivo',
+          ],
+          offline: [
+            'Aquí seguimos, sin conexión.',
+            'Tu calendario guardado y la exportación siguen funcionando. Los cambios están pendientes, no guardados en tu cuenta.',
+            'Los horarios de correo solo cambian con conexión. Ocultar cifras aquí aún no ha cambiado tus correos.',
+            'Simular reconexión con conflicto',
+            'Cerrar sesión y descartar cambios pendientes',
+          ],
+          sessions: [
+            'Dónde has iniciado sesión.',
+            'Este dispositivo · sesión actual. Otro navegador · sesión ficticia.',
+            'Cerrar sesión no cancela los recordatorios. Se borra la copia de la cuenta en este navegador; no se pueden borrar a distancia copias en dispositivos sin conexión.',
+            'Revocar otra sesión',
+            'Cerrar sesión',
+            'Eliminar cuenta',
+            'Se revocó la otra sesión en este estudio.',
+          ],
+          delete: [
+            'Sin datos activos.',
+            'Eliminar la cuenta borra los ajustes, revoca sesiones y cancela correos pendientes. Los correos entregados no se pueden retirar. Las copias de seguridad caducan en 30 días.',
+            'En el flujo real debes verificar tu correo de nuevo en los diez minutos anteriores y confirmar la eliminación.',
+            'Simular verificación y confirmar eliminación',
+            'Conservar mi cuenta',
+          ],
+          replace:
+            '¿Reemplazar los ajustes de tu cuenta por los de este dispositivo? Este estudio solo cambia de pantalla.',
+          discard:
+            '¿Descartar los cambios pendientes y cerrar sesión? Este estudio solo cambia de pantalla.',
+          deleted: 'Eliminación simulada. No se cambió ninguna cuenta ni dato real.',
+        },
+      };
+      const states = [
+        'guest',
+        'email',
+        'code',
+        'import',
+        'saved',
+        'conflict',
+        'offline',
+        'sessions',
+        'delete',
+      ];
+      let language = 'en';
+      let state = 'guest';
+      const $ = (id) => document.getElementById(id);
+      function go(next) {
+        state = next;
+        render();
+        $('title').focus();
+      }
+      function action(label, handler, primary = false) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        if (primary) button.className = 'primary';
+        button.onclick = handler;
+        return button;
+      }
+      function render() {
+        const t = copy[language],
+          c = t[state];
+        document.documentElement.lang = language;
+        $('study').textContent = t.study;
+        $('boundary').textContent = t.boundary;
+        $('fake-code').textContent = t.demo;
+        $('footer').textContent = t.footer;
+        $('scenario-label').textContent = t.scenario;
+        $('language').textContent = language === 'en' ? 'Español' : 'English';
+        $('scenario').replaceChildren(
+          ...states.map((key, index) => {
+            const o = new Option(t.states[index], key);
+            o.selected = key === state;
+            return o;
+          }),
+        );
+        $('step').textContent = t.states[states.indexOf(state)];
+        $('title').textContent = c[0];
+        $('content').replaceChildren();
+        $('error').textContent = '';
+        const p = document.createElement('p');
+        p.textContent = c[1];
+        $('content').append(p);
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+        const add = (label, handler, primary) => actions.append(action(label, handler, primary));
+        if (state === 'guest') {
+          add(c[3], () => go('email'), true);
+          add(c[2], () => ($('error').textContent = t.boundary));
+        }
+        if (state === 'email' || state === 'code') {
+          const form = document.createElement('form');
+          form.noValidate = true;
+          const label = document.createElement('label');
+          label.htmlFor = 'entry';
+          label.textContent = c[2];
+          const input = document.createElement('input');
+          input.id = 'entry';
+          input.required = true;
+          input.type = 'text';
+          input.autocomplete = 'off';
+          if (state === 'email') {
+            input.value = 'person@example.test';
+            input.readOnly = true;
+          } else {
+            input.inputMode = 'numeric';
+            input.maxLength = 8;
+            input.setAttribute('aria-describedby', 'fake-code error');
+          }
+          const submit = document.createElement('button');
+          submit.className = 'primary';
+          submit.textContent = c[3];
+          form.append(label, input, submit);
+          $('content').append(form);
+          form.onsubmit = (event) => {
+            event.preventDefault();
+            if (state === 'code' && input.value !== '12345678') {
+              $('error').textContent = c[5];
+              input.setAttribute('aria-invalid', 'true');
+              input.focus();
+              return;
+            }
+            go(state === 'email' ? 'code' : 'import');
+          };
+          add(c[4], () => go(state === 'email' ? 'guest' : 'email'));
+        }
+        if (state === 'import' || state === 'conflict') {
+          const cards = document.createElement('div');
+          cards.className = 'cards';
+          for (const [heading, detail] of [
+            [c[2], c[4]],
+            [c[3], c[5]],
+          ]) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const h = document.createElement('h2');
+            h.textContent = heading;
+            const d = document.createElement('p');
+            d.textContent = detail;
+            card.append(h, d);
+            cards.append(card);
+          }
+          $('content').append(cards);
+          add(c[6], () => go('saved'), true);
+          add(c[7], () => {
+            if (confirm(t.replace)) go('saved');
+          });
+          if (state === 'import') add(c[8], () => go('saved'));
+        }
+        if (['saved', 'offline', 'sessions', 'delete'].includes(state)) {
+          const n = document.createElement('p');
+          n.className = 'notice';
+          n.textContent = c[2];
+          $('content').append(n);
+        }
+        if (state === 'saved') {
+          add(c[3], () => go('sessions'), true);
+          add(c[4], () => go('guest'));
+        }
+        if (state === 'offline') {
+          add(c[3], () => go('conflict'), true);
+          add(c[4], () => {
+            if (confirm(t.discard)) go('guest');
+          });
+        }
+        if (state === 'sessions') {
+          add(c[3], () => ($('error').textContent = c[6]));
+          add(c[4], () => go('guest'));
+          add(c[5], () => go('delete'));
+        }
+        if (state === 'delete') {
+          add(c[3], () => {
+            go('guest');
+            $('error').textContent = t.deleted;
+          });
+          add(c[4], () => go('sessions'), true);
+        }
+        $('content').append(actions);
+      }
+      $('scenario').onchange = (event) => go(event.target.value);
+      $('language').onclick = () => {
+        language = language === 'en' ? 'es' : 'en';
+        render();
+      };
+      render();
+    </script>
+  </body>
+</html>

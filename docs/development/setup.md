@@ -1,5 +1,7 @@
 # Development setup
 
+This page describes the web client. The local R2 FastAPI/PostgreSQL foundation has separate [backend setup and checks](backend-setup.md); it does not change the currently deployed guest-only release.
+
 Use Node **24.19.0** (`.node-version`) and pnpm **11.25.0** (`packageManager`). Dependencies are pinned in the workspace manifests and `pnpm-lock.yaml`; only esbuild/workerd dependency builds are explicitly allowed in the workspace configuration.
 
 ```sh

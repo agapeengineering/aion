@@ -1,0 +1,44 @@
+name: Backend foundation checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version-file: apps/backend/.python-version
+      - run: python -m pip install uv==0.11.19
+      - run: python tools/backend-local-config.py
+      - run: docker compose -f deploy/compose.yaml -f deploy/compose.local.yaml up -d --wait postgres
+      - name: Backend lint, types, generated API and real-PostgreSQL tests
+        env:
+          AION_TEST_DATABASE_URL_FILE: ${{ github.workspace }}/.local/backend/database-url-host
+        run: sh tools/check-backend.sh
+      - name: Runtime dependency advisory check
+        working-directory: apps/backend
+        run: |
+          uv export --locked --no-dev --no-emit-project --no-hashes --format requirements-txt --output-file "$RUNNER_TEMP/aion-runtime.txt" > /dev/null
+          uvx --from pip-audit==2.10.1 pip-audit --no-deps --disable-pip -r "$RUNNER_TEMP/aion-runtime.txt"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .node-version
+      - run: npm install --global pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Build and start container artifacts
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.local.yaml up -d --build --wait
+      - name: Outage, persistence and proxy smoke
+        run: python tools/smoke-backend.py
+      - name: Stop only the disposable foundation stack
+        if: always()
+        run: docker compose -f deploy/compose.yaml -f deploy/compose.local.yaml down

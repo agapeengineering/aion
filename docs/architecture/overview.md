@@ -1,6 +1,14 @@
 # Architecture overview
 
-Aion's web release is a client-only React/TypeScript/Vite application. See [ADR-0001](decisions/0001-static-web-release.md), the [R1 specification](../requirements/web-release-specification.md) and [calendar/clock contract](../requirements/calendar-clock-contract.md).
+Aion's deployed R1 web release is a client-only React/TypeScript/Vite application. See [ADR-0001](decisions/0001-static-web-release.md), the [R1 specification](../requirements/web-release-specification.md) and [calendar/clock contract](../requirements/calendar-clock-contract.md).
+
+The [accepted R2 specification](../requirements/backend-release-specification.md) and [ADR-0002](decisions/0002-optional-account-backend.md) define the next implementation: optional accounts, sync and email through a containerized FastAPI/PostgreSQL/worker backend. The module and deployment descriptions below remain the actual R1 state until implementation evidence replaces them.
+
+## Local R2 foundation
+
+`apps/backend/src/aion` now provides validated explicit database configuration, typed initial identity models, migration-aware liveness/readiness endpoints and a probe/heartbeat worker. Explicit Alembic migration `0001_identity` creates users, sessions, email challenges and persistent abuse-counter tables; table existence does not implement auth. The API has no user-data routes. API/worker/migrate share one non-root image; local Compose adds private Postgres and a static web/proxy container with explicit loopback ports only in its local override.
+
+[Backend setup](../development/backend-setup.md) supplies commands and development limits. [Generated OpenAPI](../api/openapi.json) describes only implemented routes; [auth examples](../api/authentication-contract.md), [security choices](backend-security-components.md) and the [account study](../design/account-flow.html) prepare the next slice. [Foundation verification](../testing/backend-foundation.md) distinguishes actual local checks from pending hosted CI, user review, authentication and production recovery. The live R1 deployment remains unchanged.
 
 ## Modules and data flow
 

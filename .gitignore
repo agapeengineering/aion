@@ -24,3 +24,9 @@ private/
 .wrangler/
 .dev.vars*
 .env.*.local
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/

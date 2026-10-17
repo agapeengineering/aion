@@ -1,0 +1,12 @@
+# Explicit loopback ports for local development, never an EC2 production override.
+services:
+  postgres:
+    ports: ["127.0.0.1:15432:5432"]
+  api:
+    ports: ["127.0.0.1:18000:8000"]
+  web:
+    ports: ["127.0.0.1:18080:8080"]
+networks:
+  # Docker's internal bridge disables published ingress. Local-only override enables
+  # the explicit loopback binding for host-run integration tests; base stays internal.
+  database: {internal: false}
