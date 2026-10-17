@@ -1,0 +1,3027 @@
+{
+  "formatVersion": 1,
+  "contractVersion": "1.0.0",
+  "description": "Synthetic language-neutral calendar snapshots and display-state sequences. Golden expected values; not production code or browser/device evidence.",
+  "cases": [
+    {
+      "id": "birth-midnight",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 0,
+          "hours": 0,
+          "minutes": 0,
+          "seconds": 0
+        },
+        "remaining": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 366,
+          "hours": 8784,
+          "minutes": 527040,
+          "seconds": 31622400
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 0,
+          "currentIndex": 0,
+          "futureCells": 52,
+          "currentStart": "2000-01-01",
+          "currentEndExclusive": "2000-01-08",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "birth-noon",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-01",
+          "time": "12:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 0,
+          "hours": 12,
+          "minutes": 720,
+          "seconds": 43200
+        },
+        "remaining": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 366,
+          "hours": 8772,
+          "minutes": 526320,
+          "seconds": 31579200
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 0,
+          "currentIndex": 0,
+          "futureCells": 52,
+          "currentStart": "2000-01-01",
+          "currentEndExclusive": "2000-01-08",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "six-days",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-07",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 6,
+          "hours": 144,
+          "minutes": 8640,
+          "seconds": 518400
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 360,
+          "hours": 8640,
+          "minutes": 518400,
+          "seconds": 31104000
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 0,
+          "currentIndex": 0,
+          "futureCells": 52,
+          "currentStart": "2000-01-01",
+          "currentEndExclusive": "2000-01-08",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "one-week",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-08",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 7,
+          "hours": 168,
+          "minutes": 10080,
+          "seconds": 604800
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 359,
+          "hours": 8616,
+          "minutes": 516960,
+          "seconds": 31017600
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "one-month",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-02-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 1,
+          "weeks": 4,
+          "days": 31,
+          "hours": 744,
+          "minutes": 44640,
+          "seconds": 2678400
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 47,
+          "days": 335,
+          "hours": 8040,
+          "minutes": 482400,
+          "seconds": 28944000
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 4,
+          "currentIndex": 4,
+          "futureCells": 48,
+          "currentStart": "2000-01-29",
+          "currentEndExclusive": "2000-02-05",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "before-final-block",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-12-29",
+          "time": "23:59:59"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 363,
+          "hours": 8735,
+          "minutes": 524159,
+          "seconds": 31449599
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 3,
+          "hours": 48,
+          "minutes": 2880,
+          "seconds": 172801
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 51,
+          "currentIndex": 51,
+          "futureCells": 1,
+          "currentStart": "2000-12-23",
+          "currentEndExclusive": "2000-12-30",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "final-block-start",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-12-30",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 11,
+          "weeks": 52,
+          "days": 364,
+          "hours": 8736,
+          "minutes": 524160,
+          "seconds": 31449600
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 2,
+          "hours": 48,
+          "minutes": 2880,
+          "seconds": 172800
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 52,
+          "currentIndex": 52,
+          "futureCells": 0,
+          "currentStart": "2000-12-30",
+          "currentEndExclusive": "2001-01-01",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "horizon-minus-one",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-12-31",
+          "time": "23:59:59"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 11,
+          "weeks": 52,
+          "days": 365,
+          "hours": 8783,
+          "minutes": 527039,
+          "seconds": 31622399
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 1,
+          "hours": 0,
+          "minutes": 0,
+          "seconds": 1
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 52,
+          "currentIndex": 52,
+          "futureCells": 0,
+          "currentStart": "2000-12-30",
+          "currentEndExclusive": "2001-01-01",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "horizon-midnight",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2001-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "reached",
+        "lived": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 366,
+          "hours": 8784,
+          "minutes": 527040,
+          "seconds": 31622400
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 0,
+          "hours": 0,
+          "minutes": 0,
+          "seconds": 0
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 53,
+          "currentIndex": null,
+          "futureCells": 0,
+          "currentStart": null,
+          "currentEndExclusive": null,
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "horizon-noon",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2001-01-01",
+          "time": "12:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "reached",
+        "lived": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 366,
+          "hours": 8796,
+          "minutes": 527760,
+          "seconds": 31665600
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 0,
+          "hours": 0,
+          "minutes": 0,
+          "seconds": 0
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 53,
+          "currentIndex": null,
+          "futureCells": 0,
+          "currentStart": null,
+          "currentEndExclusive": null,
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "horizon-passed",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2001-01-03",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "passed",
+        "lived": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 368,
+          "hours": 8832,
+          "minutes": 529920,
+          "seconds": 31795200
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 0,
+          "hours": 0,
+          "minutes": 0,
+          "seconds": 0
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 53,
+          "currentIndex": null,
+          "futureCells": 0,
+          "currentStart": null,
+          "currentEndExclusive": null,
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "second-zero",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-08",
+          "time": "12:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 7,
+          "hours": 180,
+          "minutes": 10800,
+          "seconds": 648000
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 359,
+          "hours": 8604,
+          "minutes": 516240,
+          "seconds": 30974400
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "second-one",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-08",
+          "time": "12:00:01"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 7,
+          "hours": 180,
+          "minutes": 10800,
+          "seconds": 648001
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 359,
+          "hours": 8603,
+          "minutes": 516239,
+          "seconds": 30974399
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "minute-before",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-08",
+          "time": "12:00:59"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 7,
+          "hours": 180,
+          "minutes": 10800,
+          "seconds": 648059
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 359,
+          "hours": 8603,
+          "minutes": 516239,
+          "seconds": 30974341
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "minute-after",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-08",
+          "time": "12:01:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 7,
+          "hours": 180,
+          "minutes": 10801,
+          "seconds": 648060
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 359,
+          "hours": 8603,
+          "minutes": 516239,
+          "seconds": 30974340
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "hour-before",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-08",
+          "time": "12:59:59"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 7,
+          "hours": 180,
+          "minutes": 10859,
+          "seconds": 651599
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 359,
+          "hours": 8603,
+          "minutes": 516180,
+          "seconds": 30970801
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "hour-after",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-08",
+          "time": "13:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 7,
+          "hours": 181,
+          "minutes": 10860,
+          "seconds": 651600
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 359,
+          "hours": 8603,
+          "minutes": 516180,
+          "seconds": 30970800
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "midnight-before",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-08",
+          "time": "23:59:59"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 7,
+          "hours": 191,
+          "minutes": 11519,
+          "seconds": 691199
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 359,
+          "hours": 8592,
+          "minutes": 515520,
+          "seconds": 30931201
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "midnight-after",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-09",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 8,
+          "hours": 192,
+          "minutes": 11520,
+          "seconds": 691200
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 358,
+          "hours": 8592,
+          "minutes": 515520,
+          "seconds": 30931200
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "pause-next-day",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-09",
+          "time": "12:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 8,
+          "hours": 204,
+          "minutes": 12240,
+          "seconds": 734400
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 358,
+          "hours": 8580,
+          "minutes": 514800,
+          "seconds": 30888000
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "resume-later",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-11",
+          "time": "15:30:05"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 10,
+          "hours": 255,
+          "minutes": 15330,
+          "seconds": 919805
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 50,
+          "days": 356,
+          "hours": 8528,
+          "minutes": 511709,
+          "seconds": 30702595
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "clock-back",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2000-01-08",
+          "time": "11:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 7,
+          "hours": 179,
+          "minutes": 10740,
+          "seconds": 644400
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 359,
+          "hours": 8605,
+          "minutes": 516300,
+          "seconds": 30978000
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "2000-01-08",
+          "currentEndExclusive": "2000-01-15",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "leap-anniversary-before",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-02-29",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2001-02-27",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-02-28",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 11,
+          "weeks": 52,
+          "days": 364,
+          "hours": 8736,
+          "minutes": 524160,
+          "seconds": 31449600
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 1,
+          "hours": 24,
+          "minutes": 1440,
+          "seconds": 86400
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 52,
+          "currentIndex": 52,
+          "futureCells": 0,
+          "currentStart": "2001-02-27",
+          "currentEndExclusive": "2001-02-28",
+          "finalCellDays": 1
+        }
+      }
+    },
+    {
+      "id": "leap-anniversary",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-02-29",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2001-02-28",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-02-28",
+        "horizonState": "reached",
+        "lived": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 365,
+          "hours": 8760,
+          "minutes": 525600,
+          "seconds": 31536000
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 0,
+          "hours": 0,
+          "minutes": 0,
+          "seconds": 0
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 53,
+          "currentIndex": null,
+          "futureCells": 0,
+          "currentStart": null,
+          "currentEndExclusive": null,
+          "finalCellDays": 1
+        }
+      }
+    },
+    {
+      "id": "leap-four-years",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-02-29",
+        "lifespanYears": 4,
+        "clock": {
+          "date": "2004-02-28",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2004-02-29",
+        "horizonState": "before",
+        "lived": {
+          "years": 3,
+          "months": 47,
+          "weeks": 208,
+          "days": 1460,
+          "hours": 35040,
+          "minutes": 2102400,
+          "seconds": 126144000
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 1,
+          "hours": 24,
+          "minutes": 1440,
+          "seconds": 86400
+        },
+        "grid": {
+          "totalCells": 209,
+          "elapsedCells": 208,
+          "currentIndex": 208,
+          "futureCells": 0,
+          "currentStart": "2004-02-24",
+          "currentEndExclusive": "2004-02-29",
+          "finalCellDays": 5
+        }
+      }
+    },
+    {
+      "id": "month-end-clamp",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2001-01-31",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2001-02-28",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2002-01-31",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 1,
+          "weeks": 4,
+          "days": 28,
+          "hours": 672,
+          "minutes": 40320,
+          "seconds": 2419200
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 48,
+          "days": 337,
+          "hours": 8088,
+          "minutes": 485280,
+          "seconds": 29116800
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 4,
+          "currentIndex": 4,
+          "futureCells": 48,
+          "currentStart": "2001-02-28",
+          "currentEndExclusive": "2001-03-07",
+          "finalCellDays": 1
+        }
+      }
+    },
+    {
+      "id": "month-direct-not-iterative",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2001-01-31",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2001-03-30",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2002-01-31",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 1,
+          "weeks": 8,
+          "days": 58,
+          "hours": 1392,
+          "minutes": 83520,
+          "seconds": 5011200
+        },
+        "remaining": {
+          "years": 0,
+          "months": 10,
+          "weeks": 43,
+          "days": 307,
+          "hours": 7368,
+          "minutes": 442080,
+          "seconds": 26524800
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 8,
+          "currentIndex": 8,
+          "futureCells": 44,
+          "currentStart": "2001-03-28",
+          "currentEndExclusive": "2001-04-04",
+          "finalCellDays": 1
+        }
+      }
+    },
+    {
+      "id": "month-direct-exact",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2001-01-31",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "2001-03-31",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2002-01-31",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 2,
+          "weeks": 8,
+          "days": 59,
+          "hours": 1416,
+          "minutes": 84960,
+          "seconds": 5097600
+        },
+        "remaining": {
+          "years": 0,
+          "months": 10,
+          "weeks": 43,
+          "days": 306,
+          "hours": 7344,
+          "minutes": 440640,
+          "seconds": 26438400
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 8,
+          "currentIndex": 8,
+          "futureCells": 44,
+          "currentStart": "2001-03-28",
+          "currentEndExclusive": "2001-04-04",
+          "finalCellDays": 1
+        }
+      }
+    },
+    {
+      "id": "century-common",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "1899-03-01",
+        "lifespanYears": 2,
+        "clock": {
+          "date": "1900-03-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "1901-03-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 365,
+          "hours": 8760,
+          "minutes": 525600,
+          "seconds": 31536000
+        },
+        "remaining": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 365,
+          "hours": 8760,
+          "minutes": 525600,
+          "seconds": 31536000
+        },
+        "grid": {
+          "totalCells": 105,
+          "elapsedCells": 52,
+          "currentIndex": 52,
+          "futureCells": 52,
+          "currentStart": "1900-02-28",
+          "currentEndExclusive": "1900-03-07",
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "century-leap",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "1999-03-01",
+        "lifespanYears": 2,
+        "clock": {
+          "date": "2000-03-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-03-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 366,
+          "hours": 8784,
+          "minutes": 527040,
+          "seconds": 31622400
+        },
+        "remaining": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 365,
+          "hours": 8760,
+          "minutes": 525600,
+          "seconds": 31536000
+        },
+        "grid": {
+          "totalCells": 105,
+          "elapsedCells": 52,
+          "currentIndex": 52,
+          "futureCells": 52,
+          "currentStart": "2000-02-28",
+          "currentEndExclusive": "2000-03-06",
+          "finalCellDays": 3
+        }
+      }
+    },
+    {
+      "id": "ninety-year-default",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2025-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2090-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 25,
+          "months": 300,
+          "weeks": 1304,
+          "days": 9132,
+          "hours": 219168,
+          "minutes": 13150080,
+          "seconds": 789004800
+        },
+        "remaining": {
+          "years": 65,
+          "months": 780,
+          "weeks": 3391,
+          "days": 23741,
+          "hours": 569784,
+          "minutes": 34187040,
+          "seconds": 2051222400
+        },
+        "grid": {
+          "totalCells": 4697,
+          "elapsedCells": 1304,
+          "currentIndex": 1304,
+          "futureCells": 3392,
+          "currentStart": "2024-12-28",
+          "currentEndExclusive": "2025-01-04",
+          "finalCellDays": 1
+        }
+      }
+    },
+    {
+      "id": "whole-week-horizon",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2001-01-01",
+        "lifespanYears": 28,
+        "clock": {
+          "date": "2029-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2029-01-01",
+        "horizonState": "reached",
+        "lived": {
+          "years": 28,
+          "months": 336,
+          "weeks": 1461,
+          "days": 10227,
+          "hours": 245448,
+          "minutes": 14726880,
+          "seconds": 883612800
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 0,
+          "hours": 0,
+          "minutes": 0,
+          "seconds": 0
+        },
+        "grid": {
+          "totalCells": 1461,
+          "elapsedCells": 1461,
+          "currentIndex": null,
+          "futureCells": 0,
+          "currentStart": null,
+          "currentEndExclusive": null,
+          "finalCellDays": 7
+        }
+      }
+    },
+    {
+      "id": "minimum-date",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "0001-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "0001-01-08",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "0002-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 0,
+          "months": 0,
+          "weeks": 1,
+          "days": 7,
+          "hours": 168,
+          "minutes": 10080,
+          "seconds": 604800
+        },
+        "remaining": {
+          "years": 0,
+          "months": 11,
+          "weeks": 51,
+          "days": 358,
+          "hours": 8592,
+          "minutes": 515520,
+          "seconds": 30931200
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 1,
+          "currentIndex": 1,
+          "futureCells": 51,
+          "currentStart": "0001-01-08",
+          "currentEndExclusive": "0001-01-15",
+          "finalCellDays": 1
+        }
+      }
+    },
+    {
+      "id": "maximum-horizon",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "9998-12-31",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "9999-12-31",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "9999-12-31",
+        "horizonState": "reached",
+        "lived": {
+          "years": 1,
+          "months": 12,
+          "weeks": 52,
+          "days": 365,
+          "hours": 8760,
+          "minutes": 525600,
+          "seconds": 31536000
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 0,
+          "hours": 0,
+          "minutes": 0,
+          "seconds": 0
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 53,
+          "currentIndex": null,
+          "futureCells": 0,
+          "currentStart": null,
+          "currentEndExclusive": null,
+          "finalCellDays": 1
+        }
+      }
+    },
+    {
+      "id": "reference-beyond-horizon",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "9999-12-31",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2001-01-01",
+        "horizonState": "passed",
+        "lived": {
+          "years": 7999,
+          "months": 95999,
+          "weeks": 417419,
+          "days": 2921939,
+          "hours": 70126536,
+          "minutes": 4207592160,
+          "seconds": 252455529600
+        },
+        "remaining": {
+          "years": 0,
+          "months": 0,
+          "weeks": 0,
+          "days": 0,
+          "hours": 0,
+          "minutes": 0,
+          "seconds": 0
+        },
+        "grid": {
+          "totalCells": 53,
+          "elapsedCells": 53,
+          "currentIndex": null,
+          "futureCells": 0,
+          "currentStart": null,
+          "currentEndExclusive": null,
+          "finalCellDays": 2
+        }
+      }
+    },
+    {
+      "id": "dst-spring-before",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-03-10",
+          "time": "01:59:59"
+        }
+      },
+      "expected": {
+        "horizonDate": "2090-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 24,
+          "months": 290,
+          "weeks": 1262,
+          "days": 8835,
+          "hours": 212041,
+          "minutes": 12722519,
+          "seconds": 763351199
+        },
+        "remaining": {
+          "years": 65,
+          "months": 789,
+          "weeks": 3434,
+          "days": 24038,
+          "hours": 576910,
+          "minutes": 34614600,
+          "seconds": 2076876001
+        },
+        "grid": {
+          "totalCells": 4697,
+          "elapsedCells": 1262,
+          "currentIndex": 1262,
+          "futureCells": 3434,
+          "currentStart": "2024-03-09",
+          "currentEndExclusive": "2024-03-16",
+          "finalCellDays": 1
+        }
+      },
+      "clockSource": {
+        "instant": "2024-03-10T09:59:59Z",
+        "timeZone": "America/Los_Angeles",
+        "utcOffsetSeconds": -28800
+      }
+    },
+    {
+      "id": "dst-spring-after",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-03-10",
+          "time": "03:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2090-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 24,
+          "months": 290,
+          "weeks": 1262,
+          "days": 8835,
+          "hours": 212043,
+          "minutes": 12722580,
+          "seconds": 763354800
+        },
+        "remaining": {
+          "years": 65,
+          "months": 789,
+          "weeks": 3434,
+          "days": 24038,
+          "hours": 576909,
+          "minutes": 34614540,
+          "seconds": 2076872400
+        },
+        "grid": {
+          "totalCells": 4697,
+          "elapsedCells": 1262,
+          "currentIndex": 1262,
+          "futureCells": 3434,
+          "currentStart": "2024-03-09",
+          "currentEndExclusive": "2024-03-16",
+          "finalCellDays": 1
+        }
+      },
+      "clockSource": {
+        "instant": "2024-03-10T10:00:00Z",
+        "timeZone": "America/Los_Angeles",
+        "utcOffsetSeconds": -25200
+      }
+    },
+    {
+      "id": "dst-fall-before",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-11-03",
+          "time": "01:59:59"
+        }
+      },
+      "expected": {
+        "horizonDate": "2090-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 24,
+          "months": 298,
+          "weeks": 1296,
+          "days": 9073,
+          "hours": 217753,
+          "minutes": 13065239,
+          "seconds": 783914399
+        },
+        "remaining": {
+          "years": 65,
+          "months": 781,
+          "weeks": 3400,
+          "days": 23800,
+          "hours": 571198,
+          "minutes": 34271880,
+          "seconds": 2056312801
+        },
+        "grid": {
+          "totalCells": 4697,
+          "elapsedCells": 1296,
+          "currentIndex": 1296,
+          "futureCells": 3400,
+          "currentStart": "2024-11-02",
+          "currentEndExclusive": "2024-11-09",
+          "finalCellDays": 1
+        }
+      },
+      "clockSource": {
+        "instant": "2024-11-03T08:59:59Z",
+        "timeZone": "America/Los_Angeles",
+        "utcOffsetSeconds": -25200
+      }
+    },
+    {
+      "id": "dst-fall-after",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-11-03",
+          "time": "01:00:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2090-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 24,
+          "months": 298,
+          "weeks": 1296,
+          "days": 9073,
+          "hours": 217753,
+          "minutes": 13065180,
+          "seconds": 783910800
+        },
+        "remaining": {
+          "years": 65,
+          "months": 781,
+          "weeks": 3400,
+          "days": 23800,
+          "hours": 571199,
+          "minutes": 34271940,
+          "seconds": 2056316400
+        },
+        "grid": {
+          "totalCells": 4697,
+          "elapsedCells": 1296,
+          "currentIndex": 1296,
+          "futureCells": 3400,
+          "currentStart": "2024-11-02",
+          "currentEndExclusive": "2024-11-09",
+          "finalCellDays": 1
+        }
+      },
+      "clockSource": {
+        "instant": "2024-11-03T09:00:00Z",
+        "timeZone": "America/Los_Angeles",
+        "utcOffsetSeconds": -28800
+      }
+    },
+    {
+      "id": "zone-before",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-05-31",
+          "time": "17:30:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2090-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 24,
+          "months": 292,
+          "weeks": 1273,
+          "days": 8917,
+          "hours": 214025,
+          "minutes": 12841530,
+          "seconds": 770491800
+        },
+        "remaining": {
+          "years": 65,
+          "months": 787,
+          "weeks": 3422,
+          "days": 23956,
+          "hours": 574926,
+          "minutes": 34495590,
+          "seconds": 2069735400
+        },
+        "grid": {
+          "totalCells": 4697,
+          "elapsedCells": 1273,
+          "currentIndex": 1273,
+          "futureCells": 3423,
+          "currentStart": "2024-05-25",
+          "currentEndExclusive": "2024-06-01",
+          "finalCellDays": 1
+        }
+      },
+      "clockSource": {
+        "instant": "2024-06-01T00:30:00Z",
+        "timeZone": "America/Los_Angeles",
+        "utcOffsetSeconds": -25200
+      }
+    },
+    {
+      "id": "zone-after",
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-06-01",
+          "time": "09:30:00"
+        }
+      },
+      "expected": {
+        "horizonDate": "2090-01-01",
+        "horizonState": "before",
+        "lived": {
+          "years": 24,
+          "months": 293,
+          "weeks": 1274,
+          "days": 8918,
+          "hours": 214041,
+          "minutes": 12842490,
+          "seconds": 770549400
+        },
+        "remaining": {
+          "years": 65,
+          "months": 787,
+          "weeks": 3422,
+          "days": 23955,
+          "hours": 574910,
+          "minutes": 34494630,
+          "seconds": 2069677800
+        },
+        "grid": {
+          "totalCells": 4697,
+          "elapsedCells": 1274,
+          "currentIndex": 1274,
+          "futureCells": 3422,
+          "currentStart": "2024-06-01",
+          "currentEndExclusive": "2024-06-08",
+          "finalCellDays": 1
+        }
+      },
+      "clockSource": {
+        "instant": "2024-06-01T00:30:00Z",
+        "timeZone": "Asia/Tokyo",
+        "utcOffsetSeconds": 32400
+      }
+    },
+    {
+      "id": "birth-empty",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "birthDate",
+          "code": "INVALID_BIRTH_DATE"
+        }
+      }
+    },
+    {
+      "id": "birth-format",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-1-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "birthDate",
+          "code": "INVALID_BIRTH_DATE"
+        }
+      }
+    },
+    {
+      "id": "birth-invalid-day",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2001-02-29",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "birthDate",
+          "code": "INVALID_BIRTH_DATE"
+        }
+      }
+    },
+    {
+      "id": "birth-century-invalid",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "1900-02-29",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "birthDate",
+          "code": "INVALID_BIRTH_DATE"
+        }
+      }
+    },
+    {
+      "id": "birth-year-zero",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "0000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "birthDate",
+          "code": "INVALID_BIRTH_DATE"
+        }
+      }
+    },
+    {
+      "id": "birth-year-too-large",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "10000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "birthDate",
+          "code": "INVALID_BIRTH_DATE"
+        }
+      }
+    },
+    {
+      "id": "birth-wrong-type",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": null,
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "birthDate",
+          "code": "INVALID_BIRTH_DATE"
+        }
+      }
+    },
+    {
+      "id": "birth-future",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2024-01-02",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "birthDate",
+          "code": "FUTURE_BIRTH_DATE"
+        }
+      }
+    },
+    {
+      "id": "lifespan-zero",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 0,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "lifespanYears",
+          "code": "INVALID_LIFESPAN"
+        }
+      }
+    },
+    {
+      "id": "lifespan-negative",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": -1,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "lifespanYears",
+          "code": "INVALID_LIFESPAN"
+        }
+      }
+    },
+    {
+      "id": "lifespan-fraction",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90.5,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "lifespanYears",
+          "code": "INVALID_LIFESPAN"
+        }
+      }
+    },
+    {
+      "id": "lifespan-string",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": "90",
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "lifespanYears",
+          "code": "INVALID_LIFESPAN"
+        }
+      }
+    },
+    {
+      "id": "lifespan-boolean",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": true,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "lifespanYears",
+          "code": "INVALID_LIFESPAN"
+        }
+      }
+    },
+    {
+      "id": "lifespan-null",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": null,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "lifespanYears",
+          "code": "INVALID_LIFESPAN"
+        }
+      }
+    },
+    {
+      "id": "lifespan-too-large",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 9007199254740992,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "lifespanYears",
+          "code": "INVALID_LIFESPAN"
+        }
+      }
+    },
+    {
+      "id": "horizon-overflow",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "9999-01-01",
+        "lifespanYears": 1,
+        "clock": {
+          "date": "9999-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "lifespanYears",
+          "code": "HORIZON_OUT_OF_RANGE"
+        }
+      }
+    },
+    {
+      "id": "clock-invalid-date",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-02-30",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "clock",
+          "code": "INVALID_CLOCK"
+        }
+      }
+    },
+    {
+      "id": "clock-year-zero",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "0000-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "clock",
+          "code": "INVALID_CLOCK"
+        }
+      }
+    },
+    {
+      "id": "clock-24-hour",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "24:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "clock",
+          "code": "INVALID_CLOCK"
+        }
+      }
+    },
+    {
+      "id": "clock-leap-second",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "23:59:60"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "clock",
+          "code": "INVALID_CLOCK"
+        }
+      }
+    },
+    {
+      "id": "clock-missing-time",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": {
+          "date": "2024-01-01"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "clock",
+          "code": "INVALID_CLOCK"
+        }
+      }
+    },
+    {
+      "id": "clock-null",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2000-01-01",
+        "lifespanYears": 90,
+        "clock": null
+      },
+      "expected": {
+        "error": {
+          "field": "clock",
+          "code": "INVALID_CLOCK"
+        }
+      }
+    },
+    {
+      "id": "validation-clock-first",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "",
+        "lifespanYears": 0,
+        "clock": null
+      },
+      "expected": {
+        "error": {
+          "field": "clock",
+          "code": "INVALID_CLOCK"
+        }
+      }
+    },
+    {
+      "id": "validation-birth-before-lifespan",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "",
+        "lifespanYears": 0,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "birthDate",
+          "code": "INVALID_BIRTH_DATE"
+        }
+      }
+    },
+    {
+      "id": "validation-future-before-lifespan",
+      "requirements": [
+        "FR-001",
+        "FR-002"
+      ],
+      "input": {
+        "birthDate": "2024-01-02",
+        "lifespanYears": 0,
+        "clock": {
+          "date": "2024-01-01",
+          "time": "00:00:00"
+        }
+      },
+      "expected": {
+        "error": {
+          "field": "birthDate",
+          "code": "FUTURE_BIRTH_DATE"
+        }
+      }
+    }
+  ],
+  "traces": [
+    {
+      "id": "tick-and-minute-rollover",
+      "requirements": [
+        "FR-009"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "second-zero",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "second-zero"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "second-one",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "second-one"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "minute-before",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "minute-before"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "minute-after",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "minute-after"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pause-across-midnight",
+      "requirements": [
+        "FR-009"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "second-zero",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "second-zero"
+          }
+        },
+        {
+          "event": "pause",
+          "caseId": "second-one",
+          "expected": {
+            "visible": true,
+            "paused": true,
+            "displaySubdayCaseId": "second-one"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "pause-next-day",
+          "expected": {
+            "visible": true,
+            "paused": true,
+            "displaySubdayCaseId": "second-one"
+          }
+        },
+        {
+          "event": "resume",
+          "caseId": "resume-later",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "resume-later"
+          }
+        }
+      ]
+    },
+    {
+      "id": "hidden-tab-catches-up",
+      "requirements": [
+        "FR-009"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "second-zero",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "second-zero"
+          }
+        },
+        {
+          "event": "hide",
+          "caseId": "second-one",
+          "expected": {
+            "visible": false,
+            "paused": false,
+            "displaySubdayCaseId": "second-zero"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "pause-next-day",
+          "expected": {
+            "visible": false,
+            "paused": false,
+            "displaySubdayCaseId": "second-zero"
+          }
+        },
+        {
+          "event": "show",
+          "caseId": "resume-later",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "resume-later"
+          }
+        }
+      ]
+    },
+    {
+      "id": "paused-hidden-stays-paused",
+      "requirements": [
+        "FR-009"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "second-zero",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "second-zero"
+          }
+        },
+        {
+          "event": "pause",
+          "caseId": "second-one",
+          "expected": {
+            "visible": true,
+            "paused": true,
+            "displaySubdayCaseId": "second-one"
+          }
+        },
+        {
+          "event": "hide",
+          "caseId": "minute-before",
+          "expected": {
+            "visible": false,
+            "paused": true,
+            "displaySubdayCaseId": "second-one"
+          }
+        },
+        {
+          "event": "show",
+          "caseId": "pause-next-day",
+          "expected": {
+            "visible": true,
+            "paused": true,
+            "displaySubdayCaseId": "second-one"
+          }
+        },
+        {
+          "event": "resume",
+          "caseId": "resume-later",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "resume-later"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sleep-with-no-intervening-ticks",
+      "requirements": [
+        "FR-009"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "second-zero",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "second-zero"
+          }
+        },
+        {
+          "event": "show",
+          "caseId": "resume-later",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "resume-later"
+          }
+        }
+      ]
+    },
+    {
+      "id": "clock-correction",
+      "requirements": [
+        "FR-009"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "second-zero",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "second-zero"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "clock-back",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "clock-back"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "second-one",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "second-one"
+          }
+        }
+      ]
+    },
+    {
+      "id": "countdown-reaches-zero",
+      "requirements": [
+        "FR-009"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "horizon-minus-one",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "horizon-minus-one"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "horizon-midnight",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "horizon-midnight"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "horizon-noon",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "horizon-noon"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "horizon-passed",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "horizon-passed"
+          }
+        }
+      ]
+    },
+    {
+      "id": "export-live-snapshot-while-paused",
+      "requirements": [
+        "FR-009",
+        "FR-011"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "second-zero",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "second-zero"
+          }
+        },
+        {
+          "event": "pause",
+          "caseId": "second-one",
+          "expected": {
+            "visible": true,
+            "paused": true,
+            "displaySubdayCaseId": "second-one"
+          }
+        },
+        {
+          "event": "export",
+          "caseId": "pause-next-day",
+          "expected": {
+            "visible": true,
+            "paused": true,
+            "displaySubdayCaseId": "second-one",
+            "exportCaseId": "pause-next-day"
+          }
+        },
+        {
+          "event": "resume",
+          "caseId": "resume-later",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "resume-later"
+          }
+        }
+      ]
+    },
+    {
+      "id": "export-midnight-snapshots",
+      "requirements": [
+        "FR-009",
+        "FR-011"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "midnight-before",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "midnight-before"
+          }
+        },
+        {
+          "event": "export",
+          "caseId": "midnight-before",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "midnight-before",
+            "exportCaseId": "midnight-before"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "midnight-after",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "midnight-after"
+          }
+        },
+        {
+          "event": "export",
+          "caseId": "midnight-after",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "midnight-after",
+            "exportCaseId": "midnight-after"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dst-spring-jump",
+      "requirements": [
+        "FR-009"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "dst-spring-before",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "dst-spring-before"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "dst-spring-after",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "dst-spring-after"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dst-fall-repeat",
+      "requirements": [
+        "FR-009"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "dst-fall-before",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "dst-fall-before"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "dst-fall-after",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "dst-fall-after"
+          }
+        }
+      ]
+    },
+    {
+      "id": "timezone-change-same-instant",
+      "requirements": [
+        "FR-009"
+      ],
+      "steps": [
+        {
+          "event": "load",
+          "caseId": "zone-before",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "zone-before"
+          }
+        },
+        {
+          "event": "tick",
+          "caseId": "zone-after",
+          "expected": {
+            "visible": true,
+            "paused": false,
+            "displaySubdayCaseId": "zone-after"
+          }
+        }
+      ]
+    }
+  ]
+}

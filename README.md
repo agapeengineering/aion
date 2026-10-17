@@ -15,6 +15,7 @@ Later native releases aim to offer widgets and supported automatically updating 
 ## Documentation
 
 - [Reviewed R1 specification](docs/requirements/web-release-specification.md)
+- [Calendar/clock contract](docs/requirements/calendar-clock-contract.md) · [Shared fixtures and audit](docs/testing/calendar-clock-fixtures.md)
 - [Product context](docs/product/README.md)
 - [Architecture and decisions](docs/architecture/overview.md)
 - [Development setup/status](docs/development/setup.md)
@@ -22,7 +23,7 @@ Later native releases aim to offer widgets and supported automatically updating 
 
 ## Development
 
-There is no install/build/dev command yet. The next setup work defines shared calendar/clock fixtures, a coded UI prototype and the React/TypeScript/Vite toolchain. See the setup document before adding dependencies. Native components are added when scheduled; releases remain independent within this product repository.
+There is no application install/build/dev command yet. Shared calendar/clock expectations and a standalone fixture audit are available; the next setup work reviews a coded UI prototype and establishes the React/TypeScript/Vite toolchain. Run `node tools/verify-calendar-clock-fixtures.mjs --self-test` to audit the fixture data without installing dependencies. See the setup document before adding dependencies. Native components are added when scheduled; releases remain independent within this product repository.
 
 ## Contact and license
 

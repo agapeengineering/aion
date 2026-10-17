@@ -14,4 +14,4 @@ Read README.md and docs/requirements/web-release-specification.md before changes
 
 ## Current baseline
 
-Documentation only; no application manifests, runnable app, dependencies or CI yet. Next setup work defines shared calendar/clock fixtures, a coded prototype and the reproducible web toolchain/CI. Do not invent working commands until implemented.
+Specification and fixture-audit baseline; no application manifests, runnable app, dependencies or CI yet. Read docs/requirements/calendar-clock-contract.md for calculation detail and docs/testing/calendar-clock-fixtures.md for the shared golden data. Run `node tools/verify-calendar-clock-fixtures.mjs --self-test` after contract/fixture edits; this is a fixture audit, not application test evidence. Next setup work reviews a coded prototype and establishes the reproducible web toolchain/CI. Do not invent application commands until implemented.

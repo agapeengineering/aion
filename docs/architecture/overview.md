@@ -13,7 +13,7 @@ Use a small pure calendar module with language-neutral fixtures; UI, storage and
 ## Decisions still needed
 
 - Static hosting: select the deployment target and record cost, operating ownership, deployment/rollback and recovery before provisioning.
-- Calendar model: executable calendar/clock fixture definitions and supported date range.
+- Calendar model: [contract](../requirements/calendar-clock-contract.md) and [shared fixtures/audit](../testing/calendar-clock-fixtures.md) now specify the calculation boundary and supported date range. Production consumers remain unimplemented.
 - Interface design: versioned coded prototype, responsive grid grouping, export dimensions and review findings.
 - Build and verification: pinned web toolchain, lockfile, clean-checkout checks and CI.
 - Future native phase: device baselines, ambient feasibility and actual platform scheduling.

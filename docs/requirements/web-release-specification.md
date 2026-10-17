@@ -1,6 +1,6 @@
 # Aion — web release specification
 
-Version: **1.0.1**. Status: reviewed R1 scope and behavior; implementation and verification pending. Maintained by Agape Engineering. Updated 2026-10-17. This revision removes internal planning references without changing requirements.
+Version: **1.1.0**. Status: reviewed R1 scope and behavior; implementation and verification pending. Maintained by Agape Engineering. Updated 2026-10-17. This revision links the specified calendar/clock contract and audited shared fixtures; application implementation remains pending.
 
 This document is the authoritative discovery brief, product definition, requirements and verification map for the first web release. See the [product overview](../product/README.md) and [architecture overview](../architecture/overview.md). Acceptance targets describe intended behavior, not measured results or shipped features.
 
@@ -70,11 +70,9 @@ Requirement IDs are stable. Every row is Must/R1 unless explicitly marked Later.
 
 ### Calendar definitions and invariants
 
-Let B be birth date, T the device-local reference date and H the chosen horizon date. A civil-day difference uses Gregorian calendar dates rather than elapsed milliseconds, so DST days are not counted as fractional days. Lived days = days(B,T); remaining days = max(0,days(T,H)). Completed lived weeks = floor(lived days / 7); remaining full weeks = floor(remaining days / 7). A visible current or shortened final cell is not an additional completed seven-day week; label the grid legend accordingly.
+Exact inputs, supported date range, validation codes, rounding, direct calendar addition, horizon/grid intervals, nominal ticking totals and pause/visibility/export snapshot semantics are defined in the subordinate [calendar and clock contract](calendar-clock-contract.md) version 1.0.0. The [shared JSON corpus](../../tests/fixtures/calendar-clock/v1.json) and [audit record](../testing/calendar-clock-fixtures.md) make these rules executable as expectations for future implementations.
 
-Completed calendar months from date A to date Z are the largest integer n for which A plus n months (direct calculation from A, clamping the day to the target month's last day) is <= Z. Completed calendar years use the analogous anniversary rule. Calculate each unit independently: totals are not a decomposition to add together. Remaining calendar units use T to H, or zero past H. For ticking subday units, use a nominal local civil-day model: q = local hours × 3600 + local minutes × 60 + local seconds from one clock snapshot; approximate lived seconds = days(B,T) × 86400 + q; approximate remaining seconds = max(0, days(T,H) × 86400 - q). Display completed hours/minutes by flooring those second totals divided by 3600/60; show seconds as an integer. Day/week/calendar totals keep the civil-date definitions above. These are intentionally nominal 24-hour-day approximations, not exact elapsed instants; DST, manual clock and timezone changes can cause jumps. Do not request a birth time to create false precision. A pause freezes displayed ticking totals only; resuming recalculates instead of replaying missed ticks. PNG export captures one consistent clock snapshot and is static. Shared calendar/clock fixtures must validate these conventions before coding. Date-only input does not establish a precise birth/death instant. Display that approximation and the editable-assumption caveat near results/export.
-
-The overview may wrap at 52 cells, but a row is 52 week blocks, not exactly one calendar-age year. Detailed date intervals remain authoritative. Layout/grouping belongs in the coded prototype and must avoid misleading age labels.
+The reviewed behavior remains: civil-date day/week/calendar totals, approximate nominal 24-hour-day subday totals that tick from the local clock, half-open birth-anchored week blocks, and zero remaining values on/after the chosen horizon. DST/clock/timezone changes can jump approximate values; the contract specifies that behavior rather than assuming an exact birth/death instant. No production implementation is verified by the standalone corpus audit.
 
 ### Quality, privacy and compatibility targets
 
@@ -105,7 +103,7 @@ No auth/session token, API contract, backend retry, database migration, account 
 | Release | FR-012 | Source/license, exact revision/build, authorized deployment, rollback, live smoke and support links. |
 | Ambient native validation | FR-013 | Future physical-device date-refresh evidence; not a web gate. |
 
-Every evidence group is **pending**. A test plan is not a passing test. Release quality requirements remain gates on software; they need not be executed to review this specification.
+The calendar/clock corpus arithmetic and display-sequence expectations have passed a standalone fixture audit (see linked audit record). Application implementation and all application/device evidence groups remain **pending**. A test plan is not a passing test. Release quality requirements remain gates on software; they need not be executed to review this specification.
 
 ## Design decisions
 
@@ -121,7 +119,7 @@ Every evidence group is **pending**. A test plan is not a passing test. Release 
 
 ## Remaining design and verification work
 
-- Define shared calendar/clock fixtures and the supported date range.
+- Calendar/clock contract and shared fixture expectations are specified and independently audited; implement and test consumers against them.
 - Review a versioned coded prototype, including mobile layout, export presets, validation/errors, keyboard operation and long Spanish copy.
 - Establish a pinned web toolchain, lockfile and reproducible local/CI checks.
 - Select static hosting and document deployment, rollback, recovery and operating ownership.
@@ -134,3 +132,5 @@ These are planned deliverables, not completed implementation or test evidence. N
 
 - 1.0 — Initial reviewed R1 baseline: local-only web application, seven time units, ticking countdown and manual PNG export.
 - 1.0.1 — Editorial cleanup for public contributors; removed internal task references, personal planning context and private workflow details. Requirement IDs and product behavior unchanged.
+
+- 1.1.0 — Specify the subordinate calendar/clock contract, supported input range and shared golden fixtures with an independent audit; no application implementation or release implied.
