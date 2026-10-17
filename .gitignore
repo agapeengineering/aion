@@ -1,0 +1,23 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.mobileprovision
+# Generated dependencies and artifacts
+node_modules/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+.vite/
+# Editor/OS state
+.DS_Store
+.idea/
+*.log
+# Local personal data (synthetic tracked fixtures belong in tests/)
+.local/
+private/
