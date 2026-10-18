@@ -13,6 +13,7 @@ from starlette.responses import Response
 from aion.auth import AuthError, AuthService, router
 from aion.config import Settings
 from aion.database import is_ready, make_engine
+from aion.profiles import router as profile_router
 
 
 class Health(BaseModel):
@@ -76,6 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(status_code=503, content={"error": {"code": "unavailable"}})
 
     app.include_router(router)
+    app.include_router(profile_router)
 
     @app.get("/api/v1/health/live", response_model=Health)
     def live() -> Health:

@@ -1,10 +1,12 @@
 """Initial identity schema. Tables alone do not implement authentication/authorization."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -145,3 +147,46 @@ class VerificationMail(Base):
 
     provider_message_id: Mapped[str | None] = mapped_column(String(64))
     acceptance_unknown: Mapped[bool] = mapped_column(server_default="false")
+
+
+class Profile(Base):
+    __tablename__ = "profiles"
+    __table_args__ = (
+        CheckConstraint("revision > 0", name="revision_positive"),
+        CheckConstraint(
+            "(birth_date IS NULL AND lifespan_years IS NULL AND language IS "
+            "NULL AND unit IS NULL AND hide_remaining IS NULL) OR "
+            "(birth_date IS NOT NULL AND lifespan_years IS NOT NULL AND "
+            "language IS NOT NULL AND unit IS NOT NULL AND lifespan_years > "
+            "0 AND extract(year FROM birth_date) >= 1 AND extract(year FROM "
+            "birth_date) + lifespan_years <= 9999 "
+            "AND language IN ('en', 'es') AND unit IN ('years', 'months', "
+            "'weeks', 'days', 'hours', 'minutes', 'seconds') AND "
+            "hide_remaining IS NOT NULL)",
+            name="complete_profile",
+        ),
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(BigInteger)
+    birth_date: Mapped[date | None] = mapped_column(Date)
+    lifespan_years: Mapped[int | None]
+    language: Mapped[str | None] = mapped_column(String(2))
+    unit: Mapped[str | None] = mapped_column(String(16))
+    hide_remaining: Mapped[bool | None]
+
+
+class ProfileMutation(Base):
+    __tablename__ = "profile_mutations"
+    __table_args__ = (
+        CheckConstraint("octet_length(payload_digest) = 32", name="digest_length"),
+        CheckConstraint("result_revision > 0", name="revision_positive"),
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    operation_id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    payload_digest: Mapped[bytes] = mapped_column(LargeBinary)
+    result_revision: Mapped[int] = mapped_column(BigInteger)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -72,6 +72,12 @@ def documents(engine):
         raise ValueError("Unexpected migration revision")
     metadata = MetaData()
     metadata.reflect(bind=engine, only=lambda name, _: name != "alembic_version")
+    # PostgreSQL reflection can insert dependency tables in nondeterministic order.
+    # Canonicalize the reflected metadata, without substituting ORM declarations.
+    ordered = MetaData()
+    for name in sorted(metadata.tables):
+        metadata.tables[name].to_metadata(ordered)
+    metadata = ordered
     # Strip ERAlchemy's external rendering URL; keep source for local/GitHub rendering.
     exported = render_er(metadata, None, mode="mermaid_er").decode()
     mermaid = exported.split("<!--\n\n", 1)[1].split("\n\n-->", 1)[0].strip()
@@ -82,6 +88,7 @@ def documents(engine):
         lambda match: " o|--o{ " if match[1] == "one or zero" else " ||--o{ ",
         mermaid,
     )
+    mermaid = mermaid.replace(" 1--1 ", " ||--|| ")
     mermaid = "\n".join(line.rstrip() for line in mermaid.splitlines())
     dot = render_er(metadata, None, mode="dot").decode().rstrip() + "\n"
     heading = (

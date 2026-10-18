@@ -135,6 +135,112 @@
         "title": "LoginResult",
         "type": "object"
       },
+      "ProfileConflict": {
+        "properties": {
+          "current": {
+            "$ref": "#/components/schemas/ProfileSnapshot"
+          },
+          "error": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Error",
+            "type": "object"
+          }
+        },
+        "required": [
+          "error",
+          "current"
+        ],
+        "title": "ProfileConflict",
+        "type": "object"
+      },
+      "ProfileData": {
+        "additionalProperties": false,
+        "properties": {
+          "birthDate": {
+            "title": "Birthdate",
+            "type": "string"
+          },
+          "hideRemaining": {
+            "title": "Hideremaining",
+            "type": "boolean"
+          },
+          "language": {
+            "enum": [
+              "en",
+              "es"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "lifespanYears": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 9007199254740991.0,
+            "title": "Lifespanyears",
+            "type": "integer"
+          },
+          "unit": {
+            "enum": [
+              "years",
+              "months",
+              "weeks",
+              "days",
+              "hours",
+              "minutes",
+              "seconds"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "version": {
+            "maximum": 1.0,
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "birthDate",
+          "lifespanYears",
+          "language",
+          "unit",
+          "hideRemaining"
+        ],
+        "title": "ProfileData",
+        "type": "object"
+      },
+      "ProfileSnapshot": {
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProfileData"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "revision",
+          "profile"
+        ],
+        "title": "ProfileSnapshot",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -371,6 +477,190 @@
           }
         },
         "summary": "Me Endpoint"
+      }
+    },
+    "/api/v1/profile": {
+      "delete": {
+        "operationId": "reset_profile_api_v1_profile_delete",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "title": "If-Match",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileConflict"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Profile"
+      },
+      "get": {
+        "operationId": "get_profile_api_v1_profile_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Profile"
+      },
+      "put": {
+        "operationId": "put_profile_api_v1_profile_put",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "title": "If-Match",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Idempotency-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileConflict"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Profile"
       }
     }
   }

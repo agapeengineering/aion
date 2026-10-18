@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
   type FormEvent,
+  type MouseEvent,
 } from 'react';
 import {
   calculate,
@@ -31,6 +32,9 @@ import {
 import { LifeGrid } from './Grid';
 import { createWallpaper } from './export';
 import { Account, accountsEnabled } from './Account';
+import { pageFromPath, pagePath, type Page } from './routes';
+import { useProfileSync } from './use-profile-sync';
+import { SyncStatus, syncWords } from './ProfilePanel';
 
 function Arrow({ down = false }: { down?: boolean }) {
   return (
@@ -525,53 +529,131 @@ function ExportDialog({
 }
 export function App() {
   const [initial] = useState(() => loadSettings(browserStorage()));
-  const [settings, setSettings] = useState<Settings | null>(initial.settings),
+  const [guestSettings, setGuestSettings] = useState<Settings | null>(initial.settings),
     [status, setStatus] = useState<StorageStatus>(initial.status);
+  const sync = useProfileSync(accountsEnabled, guestSettings);
+  const settings = sync.state.selected ? sync.settings : guestSettings;
+  const selectedRef = useRef(sync.state.selected);
+  selectedRef.current = sync.state.selected;
   const [language, setLanguage] = useState<Language>(() =>
     location.pathname.startsWith('/es') ? 'es' : (initial.settings?.language ?? 'en'),
   );
-  const [modal, setModal] = useState<'edit' | 'export' | 'privacy' | 'reset' | 'account' | null>(
-    () =>
-      location.pathname.includes('privacy') || location.pathname.includes('privacidad')
-        ? 'privacy'
-        : null,
+  const [page, setPage] = useState<Page>(() => pageFromPath(location.pathname, accountsEnabled));
+  const [modal, setModal] = useState<'edit' | 'export' | 'privacy' | 'reset' | null>(() =>
+    location.pathname.includes('privacy') || location.pathname.includes('privacidad')
+      ? 'privacy'
+      : null,
   );
   const [resetFailed, setResetFailed] = useState(false),
     c = copy[language];
-  function update(next: Settings) {
+  const [editor, setEditor] = useState<{ owner: string | null; revision?: number }>({
+    owner: null,
+  });
+  const activeOwner = sync.state.selected ? (sync.state.identity?.id ?? null) : null;
+  function openEdit() {
+    setEditor({
+      owner: activeOwner,
+      revision: sync.state.pending?.base ?? sync.state.snapshot?.revision,
+    });
+    setModal('edit');
+  }
+  useEffect(() => {
+    if (modal === 'edit' && editor.owner !== activeOwner) setModal(null);
+  }, [modal, editor.owner, activeOwner]);
+  function update(next: Settings, expectedRevision?: number) {
     const actual = { ...next, language };
-    setSettings(actual);
-    setStatus(saveSettings(browserStorage(), actual, status));
+    if (sync.state.selected) sync.controller.edit(actual, expectedRevision);
+    else {
+      setGuestSettings(actual);
+      setStatus(saveSettings(browserStorage(), actual, status));
+    }
   }
   function switchLanguage(next: Language) {
     setLanguage(next);
     if (settings) {
       const value = { ...settings, language: next };
-      setSettings(value);
-      setStatus(saveSettings(browserStorage(), value, status));
+      if (sync.state.selected) sync.controller.edit(value);
+      else {
+        setGuestSettings(value);
+        setStatus(saveSettings(browserStorage(), value, status));
+      }
     }
   }
+  function navigate(next: Page, replace = false) {
+    const path = pagePath(next, language);
+    if (location.pathname !== path) history[replace ? 'replaceState' : 'pushState'](null, '', path);
+    setModal(null);
+    setPage(next);
+  }
+  function follow(event: MouseEvent<HTMLAnchorElement>, next: Page) {
+    if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigate(next);
+  }
+  useEffect(() => {
+    const back = () => {
+      setPage(pageFromPath(location.pathname, accountsEnabled));
+      setLanguage(/^\/es(?:\/|$)/.test(location.pathname) ? 'es' : 'en');
+      setModal(null);
+    };
+    window.addEventListener('popstate', back);
+    return () => window.removeEventListener('popstate', back);
+  }, []);
   useEffect(() => {
     document.documentElement.lang = language;
-    document.title =
-      language === 'en' ? 'Aion — A life, in weeks.' : 'Aion — Una vida, en semanas.';
-    const path = language === 'es' ? '/es' : '/';
+    const title =
+      page === 'calendar'
+        ? language === 'en'
+          ? 'A life, in weeks.'
+          : 'Una vida, en semanas.'
+        : page === 'login'
+          ? language === 'en'
+            ? 'Sign in'
+            : 'Iniciar sesión'
+          : language === 'en'
+            ? 'Your account'
+            : 'Tu cuenta';
+    document.title = `Aion — ${title}`;
+    const path = pagePath(page, language);
     if (location.pathname !== path) history.replaceState(null, '', path);
-  }, [language]);
+  }, [language, page]);
+  useEffect(() => {
+    const heading = document.querySelector<HTMLElement>('main h1');
+    heading?.setAttribute('tabindex', '-1');
+    heading?.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  }, [page]);
   useEffect(() => {
     const handler = (e: StorageEvent) => {
       if (e.key !== STORAGE_KEY && e.key !== null) return;
       const loaded = decodeSettings(e.newValue);
       if (loaded.status === 'ok') {
-        setSettings(loaded.settings);
-        if (loaded.settings) setLanguage(loaded.settings.language);
+        setGuestSettings(loaded.settings);
+        if (loaded.settings && !selectedRef.current) setLanguage(loaded.settings.language);
       }
       setStatus(loaded.status);
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
   }, []);
-  function reset() {
+  const wasSelected = useRef(sync.state.selected);
+  useEffect(() => {
+    if (sync.state.selected && sync.settings) setLanguage(sync.settings.language);
+    else if (wasSelected.current && !sync.state.selected && guestSettings)
+      setLanguage(guestSettings.language);
+    wasSelected.current = sync.state.selected;
+  }, [sync.state.selected, sync.settings?.language, guestSettings?.language]);
+  async function reset() {
+    if (sync.state.selected) {
+      try {
+        await sync.controller.reset();
+        setResetFailed(false);
+        setModal(null);
+      } catch {
+        setResetFailed(true);
+      }
+      return;
+    }
     try {
       browserStorage().removeItem(STORAGE_KEY);
       setStatus('ok');
@@ -580,27 +662,37 @@ export function App() {
       setStatus('unavailable');
       setResetFailed(true);
     }
-    setSettings(null);
+    setGuestSettings(null);
     setModal(null);
   }
-  const warning = resetFailed
-    ? language === 'en'
-      ? 'Stored settings could not be removed. Clear Aion’s site data in your browser settings. This visit has been reset.'
-      : 'No se pudieron borrar los ajustes guardados. Borra los datos de Aion en tu navegador. Esta visita se ha reiniciado.'
-    : status === 'unavailable'
-      ? c.storageError
-      : status === 'invalid'
-        ? c.storageInvalid
-        : status === 'newer'
-          ? c.storageNewer
-          : null;
+  const warning =
+    resetFailed && !sync.state.selected
+      ? language === 'en'
+        ? 'Stored settings could not be removed. Clear Aion’s site data in your browser settings. This visit has been reset.'
+        : 'No se pudieron borrar los ajustes guardados. Borra los datos de Aion en tu navegador. Esta visita se ha reiniciado.'
+      : status === 'unavailable'
+        ? c.storageError
+        : status === 'invalid'
+          ? c.storageInvalid
+          : status === 'newer'
+            ? c.storageNewer
+            : null;
   return (
     <>
-      <a className="skip-link" href="#calendar">
-        {c.skip}
+      <a className="skip-link" href={page === 'calendar' ? '#calendar' : '#account-content'}>
+        {page === 'calendar'
+          ? c.skip
+          : language === 'en'
+            ? 'Skip to main content'
+            : 'Ir al contenido principal'}
       </a>
       <header className="site-header">
-        <a className="brand" href={language === 'es' ? '/es' : '/'} aria-label="Aion by Agape">
+        <a
+          className="brand"
+          href={pagePath('calendar', language)}
+          onClick={(e) => follow(e, 'calendar')}
+          aria-label="Aion by Agape"
+        >
           aion<span>.</span>
           <small>by Agape</small>
         </a>
@@ -624,102 +716,168 @@ export function App() {
               ES
             </button>
           </div>
-          {settings && (
-            <button className="text-button header-edit" onClick={() => setModal('edit')}>
+          {settings && page === 'calendar' && (
+            <button className="text-button header-edit" onClick={openEdit}>
               {c.calendar}
               <Arrow />
             </button>
           )}
           {accountsEnabled && (
-            <button className="text-button" onClick={() => setModal('account')}>
+            <a
+              className="text-button"
+              href={pagePath(sync.state.identity ? 'account' : 'login', language)}
+              onClick={(e) => follow(e, sync.state.identity ? 'account' : 'login')}
+              aria-current={page !== 'calendar' ? 'page' : undefined}
+            >
               {language === 'en' ? 'Account' : 'Cuenta'}
-            </button>
+            </a>
           )}
         </nav>
       </header>
-      <main className="site-main">
-        <section className="hero">
-          <div>
+      {page !== 'calendar' && accountsEnabled ? (
+        <main className="site-main account-page" id="account-content">
+          <a
+            className="account-back"
+            href={pagePath('calendar', language)}
+            onClick={(e) => follow(e, 'calendar')}
+          >
+            ← {language === 'en' ? 'Back to calendar' : 'Volver al calendario'}
+          </a>
+          <div className={`account-sheet ${page === 'login' ? 'login-sheet' : ''}`}>
             <p className="eyebrow">
-              <span className="tiny-rule" />
-              {c.kicker}
+              {page === 'login'
+                ? language === 'en'
+                  ? 'A little continuity'
+                  : 'Un poco de continuidad'
+                : 'Aion / ' + (language === 'en' ? 'Account' : 'Cuenta')}
             </p>
-            <h1>{c.title}</h1>
+            <h1>
+              {page === 'login'
+                ? language === 'en'
+                  ? 'Sign in to Aion.'
+                  : 'Entra en Aion.'
+                : language === 'en'
+                  ? 'Your account.'
+                  : 'Tu cuenta.'}
+            </h1>
+            <Account
+              language={language}
+              controller={sync.controller}
+              state={sync.state}
+              guest={guestSettings}
+              done={() => navigate('calendar')}
+              page={page}
+              navigate={navigate}
+            />
           </div>
-          <p className="hero-copy">
-            {c.intro}
-            <br />
-            {c.intro2}
-          </p>
-        </section>
-        {warning && (
-          <div className="notice" role="status">
-            <p>{warning}</p>
-            {(status === 'invalid' || status === 'newer') && (
-              <button className="text-button" onClick={() => setModal('reset')}>
-                {c.reset}
-              </button>
+        </main>
+      ) : (
+        <main className="site-main">
+          {accountsEnabled &&
+            (sync.state.identity || sync.state.phase === 'expired' || sync.state.cacheIssue) && (
+              <aside className="sync-banner">
+                <SyncStatus state={sync.state} language={language} />
+                <a
+                  className="text-button"
+                  href={pagePath(sync.state.identity ? 'account' : 'login', language)}
+                  onClick={(e) => follow(e, sync.state.identity ? 'account' : 'login')}
+                >
+                  {language === 'en' ? 'Manage account' : 'Gestionar cuenta'}
+                </a>
+              </aside>
             )}
-          </div>
-        )}
-        {settings ? (
-          <CalendarView
-            key={`${settings.birthDate}:${settings.lifespanYears}`}
-            settings={settings}
-            language={language}
-            update={update}
-            onExport={() => setModal('export')}
-          />
-        ) : (
-          <section className="onboarding" id="calendar" tabIndex={-1}>
-            <div className="onboarding-story">
-              <span className="eyebrow">01 / {c.start}</span>
-              <h2>{c.emptyHeading}</h2>
-              <p>{c.emptyText}</p>
-              <div className="sample-grid" aria-hidden="true">
-                {Array.from({ length: 156 }, (_, i) => (
-                  <i
-                    key={i}
-                    className={i < 55 ? 'sample-past' : i === 55 ? 'sample-current' : ''}
-                  />
-                ))}
+          <section className="hero">
+            <div>
+              <p className="eyebrow">
+                <span className="tiny-rule" />
+                {c.kicker}
+              </p>
+              <h1>{c.title}</h1>
+            </div>
+            <p className="hero-copy">
+              {c.intro}
+              <br />
+              {c.intro2}
+            </p>
+          </section>
+          {warning && (
+            <div className="notice" role="status">
+              <p>{warning}</p>
+              {(status === 'invalid' || status === 'newer') && (
+                <button className="text-button" onClick={() => setModal('reset')}>
+                  {sync.state.selected ? syncWords[language].reset : c.reset}
+                </button>
+              )}
+            </div>
+          )}
+          {settings ? (
+            <CalendarView
+              key={`${settings.birthDate}:${settings.lifespanYears}`}
+              settings={settings}
+              language={language}
+              update={update}
+              onExport={() => setModal('export')}
+            />
+          ) : (
+            <section className="onboarding" id="calendar" tabIndex={-1}>
+              <div className="onboarding-story">
+                <span className="eyebrow">01 / {c.start}</span>
+                <h2>{c.emptyHeading}</h2>
+                <p>{c.emptyText}</p>
+                <div className="sample-grid" aria-hidden="true">
+                  {Array.from({ length: 156 }, (_, i) => (
+                    <i
+                      key={i}
+                      className={i < 55 ? 'sample-past' : i === 55 ? 'sample-current' : ''}
+                    />
+                  ))}
+                </div>
+                <p className="caption local-copy">
+                  <svg aria-hidden="true" width="16" height="17" viewBox="0 0 20 20" fill="none">
+                    <rect x="4" y="8" width="12" height="10" rx="2" stroke="currentColor" />
+                    <path d="M7 8V5a3 3 0 0 1 6 0v3" stroke="currentColor" />
+                  </svg>
+                  {c.local}
+                  <br />
+                  {accountsEnabled
+                    ? language === 'en'
+                      ? 'Guest settings stay on this device. Account saving is optional; PNGs stay local.'
+                      : 'Los ajustes locales siguen en este dispositivo. Guardar en la cuenta es opcional; las imágenes siguen siendo locales.'
+                    : c.localDetail}
+                </p>
               </div>
-              <p className="caption local-copy">
-                <svg aria-hidden="true" width="16" height="17" viewBox="0 0 20 20" fill="none">
-                  <rect x="4" y="8" width="12" height="10" rx="2" stroke="currentColor" />
-                  <path d="M7 8V5a3 3 0 0 1 6 0v3" stroke="currentColor" />
-                </svg>
-                {c.local}
-                <br />
+              <div className="onboarding-form">
+                <p className="eyebrow">{c.own}</p>
+                <SettingsForm
+                  key={activeOwner ?? 'guest'}
+                  initial={null}
+                  language={language}
+                  onSave={update}
+                />
+              </div>
+            </section>
+          )}
+          {settings && (
+            <div className="local-footer">
+              <p className="caption">
+                {sync.state.selected
+                  ? language === 'en'
+                    ? 'Account calendar.'
+                    : 'Calendario de cuenta.'
+                  : c.local}{' '}
                 {accountsEnabled
                   ? language === 'en'
-                    ? 'Calendar inputs stay on this device. Optional sign-in stores your email; sync is not enabled.'
-                    : 'Los datos del calendario siguen en este dispositivo. Iniciar sesión guarda tu correo; no hay sincronización activa.'
+                    ? 'Guest settings stay on this device. Account saving is optional; PNGs stay local.'
+                    : 'Los ajustes locales siguen en este dispositivo. Guardar en la cuenta es opcional; las imágenes siguen siendo locales.'
                   : c.localDetail}
               </p>
+              <button className="text-button reset-link" onClick={() => setModal('reset')}>
+                {sync.state.selected ? syncWords[language].reset : c.reset}
+              </button>
             </div>
-            <div className="onboarding-form">
-              <p className="eyebrow">{c.own}</p>
-              <SettingsForm initial={null} language={language} onSave={update} />
-            </div>
-          </section>
-        )}
-        {settings && (
-          <div className="local-footer">
-            <p className="caption">
-              {c.local}{' '}
-              {accountsEnabled
-                ? language === 'en'
-                  ? 'Calendar inputs stay on this device. Optional sign-in stores your email; sync is not enabled.'
-                  : 'Los datos del calendario siguen en este dispositivo. Iniciar sesión guarda tu correo; no hay sincronización activa.'
-                : c.localDetail}
-            </p>
-            <button className="text-button reset-link" onClick={() => setModal('reset')}>
-              {c.reset}
-            </button>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      )}
       <footer className="site-footer">
         <span>{c.made}</span>
         <div>
@@ -739,15 +897,6 @@ export function App() {
           <span className="version">{c.version}</span>
         </div>
       </footer>
-      {modal === 'account' && accountsEnabled && (
-        <Modal
-          title={language === 'en' ? 'Your account' : 'Tu cuenta'}
-          closeLabel={c.close}
-          onClose={() => setModal(null)}
-        >
-          <Account language={language} />
-        </Modal>
-      )}
       {modal === 'edit' && (
         <Modal title={c.edit} closeLabel={c.close} onClose={() => setModal(null)}>
           <SettingsForm
@@ -755,7 +904,7 @@ export function App() {
             language={language}
             onCancel={() => setModal(null)}
             onSave={(value) => {
-              update(value);
+              if (editor.owner === activeOwner) update(value, editor.revision);
               setModal(null);
             }}
           />
@@ -765,13 +914,24 @@ export function App() {
         <ExportDialog settings={settings} language={language} onClose={() => setModal(null)} />
       )}
       {modal === 'reset' && (
-        <Modal title={c.resetTitle} closeLabel={c.close} onClose={() => setModal(null)}>
-          <p className="muted">{c.resetText}</p>
+        <Modal
+          title={sync.state.selected ? syncWords[language].reset : c.resetTitle}
+          closeLabel={c.close}
+          onClose={() => setModal(null)}
+        >
+          <p className="muted">
+            {sync.state.selected ? syncWords[language].resetText : c.resetText}
+          </p>
+          {resetFailed && sync.state.selected && <p role="alert">{syncWords[language].error}</p>}
           <div className="form-actions">
             <button className="button secondary" onClick={() => setModal(null)}>
               {c.cancel}
             </button>
-            <button className="button primary" onClick={reset}>
+            <button
+              className="button primary"
+              disabled={sync.state.selected && (sync.state.busy || !navigator.onLine)}
+              onClick={() => void reset()}
+            >
               {c.resetConfirm}
             </button>
           </div>
@@ -787,8 +947,8 @@ export function App() {
             <p>
               {accountsEnabled
                 ? language === 'en'
-                  ? 'Calendar settings and PNG generation remain on this device. Optional sign-in sends your email and verification code to the account service and creates a secure session. Calendar sync and email reminders are not enabled in this preview. Guest use makes no account requests. Signing out revokes this session; it does not reset your local calendar. No advertising or product analytics.'
-                  : 'Los ajustes del calendario y la generación de imágenes siguen en este dispositivo. Iniciar sesión envía tu correo y código de verificación al servicio de cuentas y crea una sesión segura. Esta vista previa no activa sincronización ni recordatorios. El modo local no hace solicitudes de cuenta. Cerrar sesión revoca esta sesión, sin borrar tu calendario local. Sin publicidad ni analítica del producto.'
+                  ? 'Guest settings and PNG generation stay on this device. Optional sign-in sends your email and code to the account service. Saving to your account sends your birth date, chosen lifespan and preferences for cross-device sync. Your guest calendar is preserved separately. Account settings and pending edits may be cached on this device for offline use. Signing out revokes this session and clears its account cache, with confirmation before discarding pending changes. Remote revocation cannot erase an offline device until it reconnects. Reminders are not enabled. Guest use makes no account requests. No advertising or product analytics.'
+                  : 'Los ajustes locales y las imágenes siguen en este dispositivo. Iniciar sesión envía tu correo y código al servicio de cuentas. Guardar en la cuenta envía tu fecha de nacimiento, horizonte y preferencias para sincronizarlos. El calendario local se conserva por separado. Los ajustes de cuenta y cambios pendientes pueden guardarse en caché para usarlos sin conexión. Cerrar sesión revoca la sesión y borra su caché, con confirmación para descartar cambios pendientes. Una revocación remota no borra un dispositivo desconectado hasta que vuelva a conectarse. Los recordatorios no están activos. El modo local no consulta la cuenta. Sin publicidad ni analítica.'
                 : c.privacyBody}
             </p>
             <p>

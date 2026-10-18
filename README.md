@@ -41,12 +41,12 @@ See [development setup](docs/development/setup.md) for CI, offline-after-load li
 
 ## Backend foundation
 
-The local FastAPI/PostgreSQL backend includes explicit migrations, email-code signup/login, secure cookie sessions and an encrypted verification-mail queue. An opt-in EN/ES account UI and local Mailpit inbox allow end-to-end testing over HTTPS. See [account setup](docs/development/account-setup.md), [authentication contract](docs/api/authentication-contract.md) and [verification](docs/testing/email-code-auth.md). This slice does not enable profile sync, reminders, the remaining account lifecycle or public accounts. An [opt-in Resend adapter](docs/development/resend-setup.md) supports controlled allowlisted email tests; default capture remains local. No cloud/email provider configuration is changed.
+The local FastAPI/PostgreSQL backend includes explicit migrations, email-code signup/login, secure cookie sessions and an encrypted verification-mail queue. An opt-in EN/ES account UI and local Mailpit inbox allow end-to-end testing over HTTPS. See [account setup](docs/development/account-setup.md), [authentication contract](docs/api/authentication-contract.md) and [verification](docs/testing/email-code-auth.md). The local account preview now includes explicit profile import, cross-device sync, offline edits, revision conflicts and account-calendar reset. See the [sync contract](docs/api/profile-contract.md) and [verification evidence](docs/testing/profile-sync.md). Reminders, remaining account lifecycle and public accounts are not enabled. An [opt-in Resend adapter](docs/development/resend-setup.md) supports controlled allowlisted email tests; default capture remains local. No cloud/email provider configuration is changed.
 
 ## Documentation
 
 - [R1 specification](docs/requirements/web-release-specification.md)
-- [Accepted R2 specification: accounts, sync and reminders](docs/requirements/backend-release-specification.md) · [backend decision](docs/architecture/decisions/0002-optional-account-backend.md) — implementation pending; current web release remains local-only
+- [Accepted R2 specification: accounts, sync and reminders](docs/requirements/backend-release-specification.md) · [backend decision](docs/architecture/decisions/0002-optional-account-backend.md) — implementation in progress; current web release remains local-only
 - [Calendar/clock contract](docs/requirements/calendar-clock-contract.md) · [shared fixture audit](docs/testing/calendar-clock-fixtures.md)
 - [Architecture](docs/architecture/overview.md) · [static hosting decision](docs/architecture/decisions/0001-static-web-release.md)
 - [Database diagrams and phrase-bank ownership](docs/architecture/database.md) · [generated implemented schema](docs/architecture/database-schema.md) · [generation/check commands](docs/development/database-documentation.md)

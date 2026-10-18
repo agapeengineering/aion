@@ -1109,3 +1109,164 @@ tbody .selected-unit th {
 .account-copy .small {
   overflow-wrap: anywhere;
 }
+
+.sync-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--rule);
+  padding: 1rem 0;
+}
+.sync-status p {
+  margin: 0.35rem 0;
+}
+.profile-panel {
+  border-top: 1px solid var(--rule);
+  margin: 1.5rem 0;
+  padding-top: 1rem;
+}
+.profile-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.profile-summary {
+  min-width: 0;
+  border: 1px solid var(--rule);
+  padding: 1rem;
+}
+.profile-summary h3 {
+  margin: 0 0 1rem;
+  font:
+    1.2rem Georgia,
+    serif;
+}
+.profile-summary dl {
+  margin: 0;
+}
+.profile-summary dt {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.profile-summary dd {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 540px) {
+  .profile-comparison {
+    grid-template-columns: 1fr;
+  }
+  .sync-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* Dedicated account pages share the calendar's paper, typography and fine rules. */
+.site-header a.text-button {
+  text-decoration: none;
+}
+.site-header a[aria-current='page'] {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+}
+.account-page {
+  min-height: 65vh;
+  padding-block: 36px 80px;
+}
+.account-back {
+  display: inline-block;
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 48px;
+}
+.account-sheet {
+  max-width: 780px;
+  margin-inline: auto;
+}
+.account-sheet.login-sheet {
+  max-width: 480px;
+}
+.account-sheet h1 {
+  font:
+    400 clamp(42px, 6vw, 64px)/1.08 Georgia,
+    serif;
+  letter-spacing: -1.8px;
+  margin: 14px 0 28px;
+}
+.account-sheet h1:focus {
+  outline: none;
+}
+.account-sheet h2 {
+  font:
+    400 30px/1.2 Georgia,
+    serif;
+  letter-spacing: -0.5px;
+  margin: 0 0 20px;
+}
+.account-intro {
+  font-size: 18px;
+  line-height: 1.6;
+}
+.account-sheet .account-copy {
+  line-height: 1.6;
+}
+.account-sheet .account-copy input {
+  width: 100%;
+  min-width: 0;
+}
+.account-sheet .account-copy form {
+  margin-block: 32px;
+}
+.account-consent {
+  font-size: 13px;
+  line-height: 1.65;
+  margin-top: 28px;
+}
+.account-address {
+  overflow-wrap: anywhere;
+}
+.account-sheet .profile-panel {
+  margin-block: 32px;
+  padding-block: 32px;
+}
+.account-sheet .profile-summary {
+  margin-bottom: 24px;
+}
+.account-sheet .profile-comparison .profile-summary {
+  margin-bottom: 0;
+}
+.account-sheet .profile-panel > .form-actions {
+  justify-content: flex-start;
+}
+.account-sheet .account-copy > .button.secondary {
+  border: 0;
+  padding: 0;
+  min-height: 44px;
+  text-decoration: underline;
+  background: transparent;
+}
+@media (max-width: 540px) {
+  .account-page {
+    padding-block: 24px 48px;
+  }
+  .account-back {
+    margin-bottom: 32px;
+  }
+  .account-sheet .form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .account-sheet .button {
+    text-align: center;
+  }
+}
+
+.login-sheet form .form-actions {
+  flex-wrap: wrap;
+}
+.login-sheet form .form-actions > .button:first-child {
+  width: 100%;
+}

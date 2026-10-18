@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session as DbSession
 
 from aion.auth import AuthKeys
 from aion.mail_content import verification_content
-from aion.models import EmailChallenge, RateLimitBucket, Session, VerificationMail
+from aion.models import EmailChallenge, ProfileMutation, RateLimitBucket, Session, VerificationMail
 
 
 @dataclass(repr=False)
@@ -196,5 +196,8 @@ def cleanup_expired(engine: Engine, now: datetime) -> None:
                 (Session.expires_at <= now - timedelta(days=7))
                 | (Session.revoked_at <= now - timedelta(days=7))
             )
+        )
+        db.execute(
+            delete(ProfileMutation).where(ProfileMutation.created_at <= now - timedelta(days=30))
         )
         db.execute(delete(RateLimitBucket).where(RateLimitBucket.expires_at <= now))

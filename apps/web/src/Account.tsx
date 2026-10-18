@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { Language } from './i18n';
+import type { Page } from './routes';
+import { api, ApiError } from './api';
+import type { ProfileSync, SyncState } from './profile-sync';
+import type { Settings } from './storage';
+import { ProfilePanel, syncWords } from './ProfilePanel';
 
 export const accountsEnabled = import.meta.env.VITE_AION_AUTH === '1';
 const words = {
@@ -13,11 +18,11 @@ const words = {
     change: 'Use another email',
     out: 'Sign out',
     about:
-      'An optional account verifies your email. Your calendar stays on this device for now; settings sync and reminders are coming in separate releases.',
+      'An optional account can save your calendar across devices. You choose whether to upload this device’s settings. Email reminders are not enabled.',
     consent:
       'Continuing stores your email and a secure session on the account service. It does not upload your calendar or subscribe you to email reminders.',
     sent: 'Enter the eight-digit code from your email. It expires in ten minutes.',
-    signed: 'Email verified. Signed in as',
+    signed: 'Signed in as',
     waiting: 'Please wait…',
     invalid: 'The code is incorrect, expired or no longer active. Try again or request a new code.',
     failed: 'The account service is unavailable. Your local calendar is still usable.',
@@ -37,11 +42,11 @@ const words = {
     change: 'Usar otro correo',
     out: 'Cerrar sesión',
     about:
-      'Una cuenta opcional verifica tu correo. Tu calendario sigue en este dispositivo por ahora; la sincronización y los recordatorios llegarán en versiones posteriores.',
+      'Una cuenta opcional guarda tu calendario entre dispositivos. Tú eliges si subes los ajustes de este dispositivo. Los recordatorios no están activos.',
     consent:
       'Al continuar se guardan tu correo y una sesión segura en el servicio de cuentas. No se sube tu calendario ni se activan recordatorios.',
     sent: 'Introduce el código de ocho dígitos de tu correo. Caduca en diez minutos.',
-    signed: 'Correo verificado. Sesión iniciada como',
+    signed: 'Sesión iniciada como',
     waiting: 'Espera un momento…',
     invalid:
       'El código es incorrecto, ha caducado o ya no está activo. Inténtalo de nuevo o pide otro.',
@@ -54,41 +59,29 @@ const words = {
   },
 };
 
-class ApiError extends Error {
-  constructor(
-    public code: string,
-    public retry: number,
-  ) {
-    super(code);
-  }
-}
-async function api<T>(path: string, body?: unknown, csrf?: string): Promise<T> {
-  const response = await fetch(`/api/v1${path}`, {
-    method: body === undefined ? 'GET' : 'POST',
-    credentials: 'same-origin',
-    cache: 'no-store',
-    headers:
-      body === undefined
-        ? {}
-        : { 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  if (!response.ok) {
-    const value = await response.json().catch(() => null);
-    throw new ApiError(
-      value?.error?.code ?? 'unavailable',
-      Number(response.headers.get('Retry-After')) || 0,
-    );
-  }
-  return response.status === 204 ? (undefined as T) : response.json();
-}
-
-export function Account({ language }: { language: Language }) {
+export function Account({
+  language,
+  controller,
+  state,
+  guest,
+  done,
+  page,
+  navigate,
+}: {
+  language: Language;
+  controller: ProfileSync;
+  state: SyncState;
+  guest: Settings | null;
+  done: () => void;
+  page: Page;
+  navigate: (page: Page, replace?: boolean) => void;
+}) {
   const c = words[language];
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [challenge, setChallenge] = useState<string | null>(null);
-  const [identity, setIdentity] = useState<{ id: string; email: string } | null>(null);
+  const identity = state.identity;
+  const [confirmOut, setConfirmOut] = useState(false);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
   const [until, setUntil] = useState(0);
@@ -98,17 +91,9 @@ export function Account({ language }: { language: Language }) {
   useEffect(() => {
     alive.current = true;
     let current = true;
-    api<{ id: string; email: string }>('/me')
-      .then((value) => {
-        if (current) setIdentity(value);
-      })
-      .catch((value) => {
-        if (current && !(value instanceof ApiError && value.code === 'unauthenticated'))
-          setError('unavailable');
-      })
-      .finally(() => {
-        if (current) setBusy(false);
-      });
+    controller.resume().finally(() => {
+      if (current) setBusy(false);
+    });
     return () => {
       current = false;
       alive.current = false;
@@ -122,6 +107,11 @@ export function Account({ language }: { language: Language }) {
   useEffect(() => {
     if (challenge) codeInput.current?.focus();
   }, [challenge]);
+  useEffect(() => {
+    if (busy) return;
+    if (identity && page === 'login') navigate('account', true);
+    else if (!identity && page === 'account') navigate('login', true);
+  }, [busy, identity?.id, page]);
   const cooldown = Math.max(0, Math.ceil((until - now) / 1000));
   const errorText =
     error === 'email_not_allowed'
@@ -172,42 +162,87 @@ export function Account({ language }: { language: Language }) {
         code,
       });
       if (alive.current) {
-        setIdentity(value.user);
+        await controller.signIn(value.user);
+        if (!alive.current) return;
         setCode('');
         setChallenge(null);
       }
     });
   }
+  async function signOut() {
+    await controller.signOut();
+    if (alive.current) {
+      setEmail('');
+      setUntil(0);
+      setConfirmOut(false);
+    }
+  }
   return (
     <div className="account-copy">
-      <p>{c.about}</p>
-      {import.meta.env.VITE_AION_AUTH_LOCAL === '1' && <p className="muted">{c.local}</p>}
-      {identity ? (
+      {!identity && (
+        <p className="account-intro">
+          {language === 'en'
+            ? 'Save your calendar across devices. We’ll email you a code—no password needed.'
+            : 'Guarda tu calendario entre dispositivos. Te enviaremos un código por correo; no necesitas contraseña.'}
+        </p>
+      )}
+      {!identity && import.meta.env.VITE_AION_AUTH_LOCAL === '1' && (
+        <p className="muted">{c.local}</p>
+      )}
+      {busy && !identity && !challenge ? (
+        <p aria-live="polite">{c.waiting}</p>
+      ) : identity ? (
         <>
           <p role="status">
-            {c.signed} <strong>{identity.email}</strong>.
+            {c.signed} <strong className="account-address">{identity.email}</strong>.
           </p>
-          <button
-            className="button secondary"
-            disabled={busy}
-            onClick={() =>
-              void perform(async () => {
-                const csrf = await api<{ csrf_token: string }>('/auth/csrf');
-                await api<void>('/auth/logout', {}, csrf.csrf_token);
-                if (alive.current) {
-                  setIdentity(null);
-                  setEmail('');
-                  setUntil(0);
-                }
-              })
-            }
-          >
-            {busy ? c.waiting : c.out}
-          </button>
+          <ProfilePanel
+            controller={controller}
+            state={state}
+            guest={guest}
+            language={language}
+            done={done}
+          />
+          {confirmOut ? (
+            <>
+              <p>{syncWords[language].discard}</p>
+              <div className="form-actions">
+                <button
+                  className="button primary"
+                  disabled={busy || state.busy || !navigator.onLine}
+                  onClick={() => void perform(signOut)}
+                >
+                  {syncWords[language].discardOut}
+                </button>
+                <button className="button secondary" onClick={() => setConfirmOut(false)}>
+                  {syncWords[language].cancel}
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              className="button secondary"
+              disabled={busy || state.busy || !navigator.onLine}
+              onClick={() => {
+                if (state.pending) setConfirmOut(true);
+                else void perform(signOut);
+              }}
+            >
+              {busy ? c.waiting : c.out}
+            </button>
+          )}
         </>
       ) : (
         <form onSubmit={submit}>
-          <p className="muted">{c.consent}</p>
+          <p className="eyebrow">
+            {challenge
+              ? language === 'en'
+                ? '02 / Check your email'
+                : '02 / Revisa tu correo'
+              : language === 'en'
+                ? '01 / Your email'
+                : '01 / Tu correo'}
+          </p>
           {!challenge ? (
             <label>
               {c.email}
@@ -222,7 +257,9 @@ export function Account({ language }: { language: Language }) {
             </label>
           ) : (
             <>
-              <p>{c.sent}</p>
+              <p>
+                {c.sent} <strong className="account-address">{email}</strong>
+              </p>
               <label>
                 {c.code}
                 <input
@@ -241,7 +278,7 @@ export function Account({ language }: { language: Language }) {
             </>
           )}
           <div className="form-actions">
-            <button className="button" disabled={busy || (!challenge && cooldown > 0)}>
+            <button className="button primary" disabled={busy || (!challenge && cooldown > 0)}>
               {busy ? c.waiting : challenge ? c.verify : c.send}
             </button>
             {challenge && (
@@ -272,8 +309,9 @@ export function Account({ language }: { language: Language }) {
           </div>
         </form>
       )}
+      {!identity && <p className="account-consent muted">{c.consent}</p>}
       <p id="account-error" role="alert">
-        {errorText}
+        {errorText || (!identity && state.phase === 'error' ? c.failed : '')}
       </p>
     </div>
   );

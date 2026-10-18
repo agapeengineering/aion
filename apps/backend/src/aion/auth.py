@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session as DbSession
 
 from aion.config import Settings
 from aion.mail_content import verification_payload
-from aion.models import EmailChallenge, RateLimitBucket, Session, User, VerificationMail
+from aion.models import EmailChallenge, Profile, RateLimitBucket, Session, User, VerificationMail
 
 SESSION_COOKIE = "__Host-aion_session"
 CHALLENGE_COOKIE = "__Host-aion_challenge"
@@ -119,7 +119,7 @@ class Identity(BaseModel):
 
 class LoginResult(BaseModel):
     user: Identity
-    has_profile: bool = False  # Profile persistence is a subsequent slice.
+    has_profile: bool = False
 
 
 class CsrfResult(BaseModel):
@@ -342,31 +342,37 @@ class AuthService:
         return identity, token
 
     def session(self, request: Request, *, logout: bool = False) -> tuple[Identity, str]:
+        with DbSession(self.engine) as db, db.begin():
+            return self.session_in(db, request, logout=logout)
+
+    def session_in(
+        self, db: DbSession, request: Request, *, write: bool = False, logout: bool = False
+    ) -> tuple[Identity, str]:
         token = request.cookies.get(SESSION_COOKIE, "")
         now = self.clock()
-        with DbSession(self.engine) as db, db.begin():
-            session = db.scalars(
-                select(Session).where(Session.token_digest == token_digest(token)).with_for_update()
-            ).first()
-            if (
-                session is None
-                or session.revoked_at is not None
-                or session.expires_at <= now
-                or session.absolute_expires_at <= now
-            ):
-                raise AuthError(401, "unauthenticated")
-            if logout:
-                self.check_origin(request)
-                nonce = request.headers.get("x-csrf-token", "")
-                if not hmac.compare_digest(session.csrf_digest, token_digest(nonce)):
-                    raise AuthError(403, "csrf_failed")
-                session.revoked_at = now
-            else:
-                session.last_seen_at = now
-                session.expires_at = min(now + timedelta(days=7), session.absolute_expires_at)
-            user = db.get(User, session.user_id)
-            assert user is not None
-            return Identity(id=user.id, email=user.email), self.keys.csrf_token(token)
+        session = db.scalars(
+            select(Session).where(Session.token_digest == token_digest(token)).with_for_update()
+        ).first()
+        if (
+            session is None
+            or session.revoked_at is not None
+            or session.expires_at <= now
+            or session.absolute_expires_at <= now
+        ):
+            raise AuthError(401, "unauthenticated")
+        if write or logout:
+            self.check_origin(request)
+            nonce = request.headers.get("x-csrf-token", "")
+            if not hmac.compare_digest(session.csrf_digest, token_digest(nonce)):
+                raise AuthError(403, "csrf_failed")
+        if logout:
+            session.revoked_at = now
+        else:
+            session.last_seen_at = now
+            session.expires_at = min(now + timedelta(days=7), session.absolute_expires_at)
+        user = db.get(User, session.user_id)
+        assert user is not None
+        return Identity(id=user.id, email=user.email), self.keys.csrf_token(token)
 
 
 def service(request: Request) -> AuthService:
@@ -398,7 +404,12 @@ def challenge_endpoint(value: ChallengeInput, request: Request) -> JSONResponse:
 @router.post("/auth/verify", response_model=LoginResult)
 def verify_endpoint(value: VerifyInput, request: Request) -> JSONResponse:
     identity, token = service(request).verify(value, request)
-    response = JSONResponse(content=LoginResult(user=identity).model_dump(mode="json"))
+    with DbSession(service(request).engine) as db:
+        profile = db.get(Profile, identity.id)
+        present = profile is not None and profile.birth_date is not None
+    response = JSONResponse(
+        content=LoginResult(user=identity, has_profile=present).model_dump(mode="json")
+    )
     set_cookie(response, SESSION_COOKIE, token, 30 * 86400)
     response.delete_cookie(CHALLENGE_COOKIE, path="/", secure=True, httponly=True, samesite="lax")
     return response

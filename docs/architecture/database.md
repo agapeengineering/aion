@@ -1,6 +1,6 @@
 # Aion data model
 
-Status: implementation map, not a claim of a deployed account service. The public R1 site still stores calendar settings only in each browser. The local backend foundation has four application tables under migration `0001_identity`; the signup/login slice adds `verification_mail` in `0002_verification`. Migration `0003_mail_result` adds provider acceptance ID/uncertainty metadata. `alembic_version` tracks schema revision separately. The accepted [R2 specification](../requirements/backend-release-specification.md) defines the planned additions.
+Status: implementation map, not a claim of a deployed account service. The public R1 site still stores calendar settings only in each browser. The local backend foundation has four application tables under migration `0001_identity`; the signup/login slice adds `verification_mail` in `0002_verification`. Migration `0003_mail_result` adds provider acceptance ID/uncertainty metadata. Migration `0004_profiles` adds `profiles` and `profile_mutations`. `alembic_version` tracks schema revision separately. The accepted [R2 specification](../requirements/backend-release-specification.md) defines the planned additions.
 
 ![Implemented and planned Aion data](database.svg)
 
@@ -12,26 +12,24 @@ See the [ERAlchemy-generated schema diagram](database-schema.md) and [canonical 
 
 A first-login challenge has **no user foreign key**: an account is created only after successful verification. Reverification challenges belong to an existing user. Sessions/challenges referencing a deleted user cascade; this is a schema property, not an implemented account-deletion workflow. Rate counters deliberately do not require a user, so signup and nonexistent addresses receive the same abuse protection. The active challenge index permits only one unconsumed/non-invalidated challenge per email/purpose; resending invalidates its predecessor transactionally.
 
-## Planned account sync and reminder data
+## Implemented account profiles
+
+`profiles.user_id` is both the primary key and an owning user foreign key: each account has zero or one current profile row. A complete profile stores date-only birth date, lifespan, language, primary unit and remaining-figure visibility. There are no ticking counters or rows per week. Reset clears all five fields while increasing the revision; this tombstone prevents an old offline device from recreating a deleted profile with revision zero.
+
+`profile_mutations` stores owner + operation UUID, keyed request digest, resulting revision and creation time for 30 days. It retains no prior profile bodies. The worker removes expired operation metadata. Revision checking continues to reject stale operations after metadata expires. Both tables cascade when their owning user is deleted; the account-deletion workflow is still pending. The generated renderer infers cardinalities from columns, so its users/profiles edge does not express the optional absence of the child row; this description and the migration are authoritative.
+
+See the [implemented sync API and browser behavior](../api/profile-contract.md).
+
+## Planned reminder data
 
 These entities are **not implemented yet**. The planned general outbox may extend or replace the auth-specific `verification_mail` table; it is not a second currently deployed queue. Names below are logical design labels; subsequent reviewed migrations own exact fields/constraints.
 
 ```mermaid
 erDiagram
-    USERS ||--o| PROFILES : "optional saved calendar"
     USERS ||--o| REMINDER_PREFERENCES : "explicit opt-in"
     EMAIL_CHALLENGES ||--o| EMAIL_OUTBOX : "verification delivery before signup"
     USERS o|--o{ EMAIL_OUTBOX : "future reminder delivery"
     EMAIL_OUTBOX ||--o{ EMAIL_EVENTS : "provider metadata"
-    PROFILES {
-        uuid user_id PK,FK
-        date birth_date
-        int lifespan_years
-        string language
-        string primary_unit
-        bool hide_remaining
-        int revision
-    }
     REMINDER_PREFERENCES {
         uuid user_id PK,FK
         bool enabled "default false"
@@ -85,7 +83,7 @@ flowchart LR
     Content["Original EN/ES phrases — versioned source"] --> Web["Web calendar"]
     Content -. "planned shared content extraction" .-> Worker["Reminder worker"]
     Browser["Guest browser settings"] --> Web
-    Web -. "explicit account import / future sync" .-> Profile["PostgreSQL profile inputs"]
+    Web -- "explicit account import / sync" --> Profile["PostgreSQL profile inputs"]
     Profile -. "future scheduled snapshot" .-> Worker
 ```
 

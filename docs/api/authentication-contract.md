@@ -6,6 +6,8 @@ The [OpenAPI export](openapi.json) is generated exclusively from FastAPI. Implem
 
 ## Browser journey and identity
 
+The local UI now uses dedicated `/login` and `/account` pages, with `/es/login` and `/es/account` equivalents; see the [implemented page design](../design/account-pages.md). Passwordless code, session and CSRF behavior is unchanged. The interaction study below is an earlier behavior prototype, not the current page layout.
+
 The [EN/ES interaction study](../design/account-flow.html) uses only synthetic data and local memory. No network, account, persistence or delivery occurs. Cover guest → email → code → new/existing profile choice; account/cached/offline/conflicting states; session revocation, sign-out and deletion/reverification. Prototype comparisons intentionally show different 90/95-year horizons. Human review remains pending.
 
 Trim email whitespace and validate with a maintained email validator. R2 uses a documented case-insensitive identity policy: lower-case normalized addresses, no Gmail-specific dot removal or plus-address rewriting. No display-name input. Reject unsupported internationalized local parts initially with a localized field error; internationalized domains may normalize to ASCII. Domain-level validation is not mailbox ownership verification. The email code is the ownership check; do not use SMTP probing or account-existence responses.

@@ -18,6 +18,7 @@ def test_migrated_schema_matches_committed_documentation(database):
     assert first == documents(database)
     for name, value in first.items():
         assert value == (ROOT / name).read_text()
+    assert " 1--1 " not in first["database-schema.md"]
     assert "mermaid.ink" not in first["database-schema.md"]
     assert "aion_test_" not in first["database-schema.dot"]
     assert "alembic_version {" not in first["database-schema.md"]
