@@ -4,7 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from aion.config import Settings
 
-SCHEMA_REVISION = "0001_identity"
+SCHEMA_REVISION = "0002_verification"
 
 
 def make_engine(settings: Settings) -> Engine:

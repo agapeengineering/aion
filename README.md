@@ -41,7 +41,7 @@ See [development setup](docs/development/setup.md) for CI, offline-after-load li
 
 ## Backend foundation
 
-The accepted R2 account/sync/reminder release starts with a local FastAPI/PostgreSQL foundation, explicit migrations, a probe-only worker and Docker Compose. See [backend setup](docs/development/backend-setup.md) for locked installation, real-PostgreSQL checks and local container smoke. [Authentication examples](docs/api/authentication-contract.md) and the [EN/ES account study](docs/design/account-flow.html) prepare the next implementation slice; no account or mail endpoints are working yet. This foundation does not alter the live site or configure cloud/email services.
+The local FastAPI/PostgreSQL backend includes explicit migrations, email-code signup/login, secure cookie sessions and an encrypted verification-mail queue. An opt-in EN/ES account UI and local Mailpit inbox allow end-to-end testing over HTTPS. See [account setup](docs/development/account-setup.md), [authentication contract](docs/api/authentication-contract.md) and [verification](docs/testing/email-code-auth.md). This slice does not enable profile sync, reminders, the remaining account lifecycle or public accounts. No cloud/email provider configuration is changed.
 
 ## Documentation
 
@@ -49,6 +49,7 @@ The accepted R2 account/sync/reminder release starts with a local FastAPI/Postgr
 - [Accepted R2 specification: accounts, sync and reminders](docs/requirements/backend-release-specification.md) · [backend decision](docs/architecture/decisions/0002-optional-account-backend.md) — implementation pending; current web release remains local-only
 - [Calendar/clock contract](docs/requirements/calendar-clock-contract.md) · [shared fixture audit](docs/testing/calendar-clock-fixtures.md)
 - [Architecture](docs/architecture/overview.md) · [static hosting decision](docs/architecture/decisions/0001-static-web-release.md)
+- [Database diagrams and phrase-bank ownership](docs/architecture/database.md) · [generated implemented schema](docs/architecture/database-schema.md) · [generation/check commands](docs/development/database-documentation.md)
 - [Deploy/rollback/recovery](docs/operations/web-deployment.md)
 - [Backend setup](docs/development/backend-setup.md) · [foundation verification](docs/testing/backend-foundation.md) · [implemented API](docs/api/openapi.json)
 - [Product overview](docs/product/README.md) · [interface study/review](docs/design/interface-review.md)

@@ -30,6 +30,7 @@ import {
 } from './storage';
 import { LifeGrid } from './Grid';
 import { createWallpaper } from './export';
+import { Account, accountsEnabled } from './Account';
 
 function Arrow({ down = false }: { down?: boolean }) {
   return (
@@ -529,10 +530,11 @@ export function App() {
   const [language, setLanguage] = useState<Language>(() =>
     location.pathname.startsWith('/es') ? 'es' : (initial.settings?.language ?? 'en'),
   );
-  const [modal, setModal] = useState<'edit' | 'export' | 'privacy' | 'reset' | null>(() =>
-    location.pathname.includes('privacy') || location.pathname.includes('privacidad')
-      ? 'privacy'
-      : null,
+  const [modal, setModal] = useState<'edit' | 'export' | 'privacy' | 'reset' | 'account' | null>(
+    () =>
+      location.pathname.includes('privacy') || location.pathname.includes('privacidad')
+        ? 'privacy'
+        : null,
   );
   const [resetFailed, setResetFailed] = useState(false),
     c = copy[language];
@@ -628,6 +630,11 @@ export function App() {
               <Arrow />
             </button>
           )}
+          {accountsEnabled && (
+            <button className="text-button" onClick={() => setModal('account')}>
+              {language === 'en' ? 'Account' : 'Cuenta'}
+            </button>
+          )}
         </nav>
       </header>
       <main className="site-main">
@@ -684,7 +691,11 @@ export function App() {
                 </svg>
                 {c.local}
                 <br />
-                {c.localDetail}
+                {accountsEnabled
+                  ? language === 'en'
+                    ? 'Calendar inputs stay on this device. Optional sign-in stores your email; sync is not enabled.'
+                    : 'Los datos del calendario siguen en este dispositivo. Iniciar sesión guarda tu correo; no hay sincronización activa.'
+                  : c.localDetail}
               </p>
             </div>
             <div className="onboarding-form">
@@ -696,7 +707,12 @@ export function App() {
         {settings && (
           <div className="local-footer">
             <p className="caption">
-              {c.local} {c.localDetail}
+              {c.local}{' '}
+              {accountsEnabled
+                ? language === 'en'
+                  ? 'Calendar inputs stay on this device. Optional sign-in stores your email; sync is not enabled.'
+                  : 'Los datos del calendario siguen en este dispositivo. Iniciar sesión guarda tu correo; no hay sincronización activa.'
+                : c.localDetail}
             </p>
             <button className="text-button reset-link" onClick={() => setModal('reset')}>
               {c.reset}
@@ -723,6 +739,15 @@ export function App() {
           <span className="version">{c.version}</span>
         </div>
       </footer>
+      {modal === 'account' && accountsEnabled && (
+        <Modal
+          title={language === 'en' ? 'Your account' : 'Tu cuenta'}
+          closeLabel={c.close}
+          onClose={() => setModal(null)}
+        >
+          <Account language={language} />
+        </Modal>
+      )}
       {modal === 'edit' && (
         <Modal title={c.edit} closeLabel={c.close} onClose={() => setModal(null)}>
           <SettingsForm
@@ -753,9 +778,19 @@ export function App() {
         </Modal>
       )}
       {modal === 'privacy' && (
-        <Modal title={c.privacyTitle} closeLabel={c.close} onClose={() => setModal(null)}>
+        <Modal
+          title={accountsEnabled ? c.privacy : c.privacyTitle}
+          closeLabel={c.close}
+          onClose={() => setModal(null)}
+        >
           <div className="privacy-copy">
-            <p>{c.privacyBody}</p>
+            <p>
+              {accountsEnabled
+                ? language === 'en'
+                  ? 'Calendar settings and PNG generation remain on this device. Optional sign-in sends your email and verification code to the account service and creates a secure session. Calendar sync and email reminders are not enabled in this preview. Guest use makes no account requests. Signing out revokes this session; it does not reset your local calendar. No advertising or product analytics.'
+                  : 'Los ajustes del calendario y la generación de imágenes siguen en este dispositivo. Iniciar sesión envía tu correo y código de verificación al servicio de cuentas y crea una sesión segura. Esta vista previa no activa sincronización ni recordatorios. El modo local no hace solicitudes de cuenta. Cerrar sesión revoca esta sesión, sin borrar tu calendario local. Sin publicidad ni analítica del producto.'
+                : c.privacyBody}
+            </p>
             <p>
               {c.privacyHost}{' '}
               <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer">

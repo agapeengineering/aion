@@ -6,9 +6,11 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException
 from starlette.responses import Response
 
+from aion.auth import AuthError, AuthService, router
 from aion.config import Settings
 from aion.database import is_ready, make_engine
 
@@ -20,9 +22,11 @@ class Health(BaseModel):
 def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        engine = make_engine(settings or Settings())
+        configured = settings or Settings()
+        engine = make_engine(configured)
         app.state.engine = engine
         try:
+            app.state.auth = AuthService(engine, configured) if configured.auth_enabled else None
             yield
         finally:
             engine.dispose()
@@ -58,6 +62,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
         return JSONResponse(status_code=422, content={"error": {"code": "invalid_request"}})
+
+    @app.exception_handler(AuthError)
+    async def auth_error(request: Request, exc: AuthError) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status,
+            content={"error": {"code": exc.code}},
+            headers={"Retry-After": str(exc.retry_after)} if exc.retry_after is not None else None,
+        )
+
+    @app.exception_handler(SQLAlchemyError)
+    async def database_error(request: Request, exc: SQLAlchemyError) -> JSONResponse:
+        return JSONResponse(status_code=503, content={"error": {"code": "unavailable"}})
+
+    app.include_router(router)
 
     @app.get("/api/v1/health/live", response_model=Health)
     def live() -> Health:

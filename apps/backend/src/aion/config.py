@@ -14,6 +14,10 @@ class Settings(BaseSettings):
 
     database_url: SecretStr | None = None
     database_url_file: Path | None = None
+    auth_enabled: bool = False
+    auth_origin: str = "https://aion.agape.engineering"
+    auth_secrets_file: Path | None = None
+    local_mail_capture: bool = False
 
     @model_validator(mode="after")
     def validate_database(self) -> Self:

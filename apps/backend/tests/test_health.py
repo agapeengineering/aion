@@ -27,7 +27,7 @@ def test_liveness_survives_database_failure_without_leaking_details(caplog) -> N
 
 
 @pytest.mark.parametrize(
-    "path", ["/api/v1/auth/verify", "/api/v1/unknown", "/docs", "/openapi.json"]
+    "path", ["/api/v1/auth/unknown", "/api/v1/unknown", "/docs", "/openapi.json"]
 )
 def test_unimplemented_paths_are_json_404_not_spa_or_fake_auth(path: str) -> None:
     with TestClient(create_app(UNREACHABLE)) as client:

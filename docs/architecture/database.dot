@@ -1,0 +1,37 @@
+digraph Aion {
+  graph [rankdir=TB, bgcolor="#faf6ee", pad="0.4", nodesep="0.4", ranksep="0.6", fontname="Helvetica", label="AION  /  DATA MAP\nLocal backend source and planned R2 additions — public R1 remains on-device", labelloc=t, fontsize=19];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, color="#62584d", fillcolor="#fffdf8", margin="0.22,0.16"];
+  edge [fontname="Helvetica", fontsize=10, color="#62584d", arrowsize=0.7];
+  subgraph cluster_current {
+    label="IMPLEMENTED LOCALLY · PostgreSQL · solid boxes"; color="#1a1a1a"; penwidth=1.5; margin=22;
+    users [label="USERS\nVerified email identity\nCreated only after code verification", fillcolor="#1a1a1a", fontcolor="#faf6ee"];
+    sessions [label="SESSIONS\nUser FK · token/CSRF digests\nIdle + absolute expiry · revocation"];
+    challenges [label="EMAIL_CHALLENGES\nEmail · purpose · code/browser digests\nExpiry · attempts · consumed/invalidated"];
+    limits [label="RATE_LIMIT_BUCKETS\nKeyed email/IP identity\nWindow · count · expiry"];
+    verification [label="VERIFICATION_MAIL\nChallenge FK · sealed payload\nStatus · retries · expiry"];
+    users -> sessions [label="one to many"];
+    users -> challenges [label="optional owner; reverify reserved"];
+    challenges -> verification [label="one to zero/one"];
+    limits -> challenges [label="protects; no FK", style=dashed];
+  }
+  subgraph cluster_future {
+    label="PLANNED R2 · not implemented · dashed boxes"; color="#b5532a"; style=dashed; margin=22;
+    node [style="rounded,dashed,filled", color="#943f1e", fillcolor="#f4ecdf"];
+    profiles [label="PROFILES\nUser FK · birth date · lifespan\nLanguage · units · visibility · revision"];
+    prefs [label="REMINDER_PREFERENCES\nUser FK · explicit consent\nDaily/weekly · timezone · next due"];
+    delivery [label="REMINDER OUTBOX + EVENTS\nLogical send key · retries/status\nProvider metadata · chosen phrase ID"];
+    suppression [label="SUPPRESSIONS\nKeyed email identifier · reason\nIndependent of active account"];
+    deletion [label="DELETION LEDGER\nMinimal deletion marker\nIndependent off-host recovery copy"];
+    profiles -> prefs [label="saved profile required"];
+    prefs -> delivery [label="eligible scheduled snapshot"];
+    suppression -> delivery [label="blocks sending"];
+    deletion -> suppression [style=invis];
+  }
+  phrases [label="PHRASE BANK · versioned source\nOriginal EN/ES content · no user FK\nCurrently i18n.ts; shared file before reminders", color="#943f1e", penwidth=2];
+  browser [label="DEVICE-OWNED\nGuest calendar settings · PNG exports\nNever uploaded by signup alone"];
+  users -> profiles [label="one to zero/one", style=dashed];
+  users -> prefs [label="opt-in only", style=dashed];
+  users -> deletion [label="future deletion workflow", style=dashed];
+  phrases -> delivery [label="future source content lookup", style=dashed];
+  browser -> profiles [label="future explicit import/sync", style=dashed];
+}

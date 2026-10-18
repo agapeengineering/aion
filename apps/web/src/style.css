@@ -1090,3 +1090,22 @@ tbody .selected-unit th {
     break-inside: avoid;
   }
 }
+
+.account-copy label {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+.account-copy input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  padding: 0.75rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.account-copy .small {
+  overflow-wrap: anywhere;
+}

@@ -1,6 +1,87 @@
 {
   "components": {
     "schemas": {
+      "ChallengeInput": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Email",
+            "type": "string"
+          },
+          "language": {
+            "default": "en",
+            "enum": [
+              "en",
+              "es"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "purpose": {
+            "const": "login",
+            "default": "login",
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "ChallengeInput",
+        "type": "object"
+      },
+      "ChallengeResult": {
+        "properties": {
+          "challenge_id": {
+            "format": "uuid",
+            "title": "Challenge Id",
+            "type": "string"
+          },
+          "expires_in": {
+            "default": 600,
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "resend_after": {
+            "default": 60,
+            "title": "Resend After",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "challenge_id"
+        ],
+        "title": "ChallengeResult",
+        "type": "object"
+      },
+      "CsrfResult": {
+        "properties": {
+          "csrf_token": {
+            "title": "Csrf Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "csrf_token"
+        ],
+        "title": "CsrfResult",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
       "Health": {
         "properties": {
           "status": {
@@ -17,6 +98,103 @@
         ],
         "title": "Health",
         "type": "object"
+      },
+      "Identity": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email"
+        ],
+        "title": "Identity",
+        "type": "object"
+      },
+      "LoginResult": {
+        "properties": {
+          "has_profile": {
+            "default": false,
+            "title": "Has Profile",
+            "type": "boolean"
+          },
+          "user": {
+            "$ref": "#/components/schemas/Identity"
+          }
+        },
+        "required": [
+          "user"
+        ],
+        "title": "LoginResult",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VerifyInput": {
+        "additionalProperties": false,
+        "properties": {
+          "challenge_id": {
+            "format": "uuid",
+            "title": "Challenge Id",
+            "type": "string"
+          },
+          "code": {
+            "pattern": "^[0-9]{8}$",
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "challenge_id",
+          "code"
+        ],
+        "title": "VerifyInput",
+        "type": "object"
       }
     }
   },
@@ -26,6 +204,111 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/auth/challenges": {
+      "post": {
+        "operationId": "challenge_endpoint_api_v1_auth_challenges_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChallengeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Challenge Endpoint"
+      }
+    },
+    "/api/v1/auth/csrf": {
+      "get": {
+        "operationId": "csrf_endpoint_api_v1_auth_csrf_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Csrf Endpoint"
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "logout_endpoint_api_v1_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout Endpoint"
+      }
+    },
+    "/api/v1/auth/verify": {
+      "post": {
+        "operationId": "verify_endpoint_api_v1_auth_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Endpoint"
+      }
+    },
     "/api/v1/health/live": {
       "get": {
         "operationId": "live_api_v1_health_live_get",
@@ -70,6 +353,24 @@
           }
         },
         "summary": "Ready"
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "me_endpoint_api_v1_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Me Endpoint"
       }
     }
   }

@@ -119,3 +119,23 @@ class RateLimitBucket(Base):
     window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
     attempts: Mapped[int] = mapped_column(server_default="0")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class VerificationMail(Base):
+    """Short-lived sealed verification payload, not a permanent email archive."""
+
+    __tablename__ = "verification_mail"
+    __table_args__ = (
+        CheckConstraint("status IN ('pending', 'sent', 'cancelled', 'failed')", name="status"),
+        CheckConstraint("attempts BETWEEN 0 AND 6", name="attempt_range"),
+        Index("ix_verification_mail_due", "status", "next_attempt_at"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    challenge_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("email_challenges.id", ondelete="CASCADE"), unique=True
+    )
+    encrypted_payload: Mapped[bytes | None] = mapped_column(LargeBinary)
+    status: Mapped[str] = mapped_column(String(16), server_default="pending")
+    attempts: Mapped[int] = mapped_column(server_default="0")
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

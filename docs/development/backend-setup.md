@@ -2,6 +2,8 @@
 
 Status: local foundation, not a public account release. Runtime source: `apps/backend`; accepted baseline: [R2](../requirements/backend-release-specification.md), [ADR-0002](../architecture/decisions/0002-optional-account-backend.md). Foundation implementation does not imply accounts, synchronization, scheduling, Resend or EC2 configuration are working.
 
+The optional local signup/login layer is documented separately in [account setup](account-setup.md); the default stack keeps it disabled.
+
 ## Prerequisites
 
 - Docker Engine and Compose (tested with Engine 29.4.0 / Compose 5.1.2); start the local engine first. Commands affect only the `aion-foundation` project.
@@ -46,7 +48,7 @@ Local HTTP omits the production-only upgrade policy so browser tests can load th
 
 ## Migrations and contracts
 
-One-shot `migrate` completes successfully before API/worker start. API startup never auto-creates tables or migrates; liveness remains healthy during a DB outage while readiness returns only a generic 503. Readiness requires exact schema revision `0001_identity`, rejects unknown/multiple revisions and avoids printing database errors. Connections, pool waits and SQL statements have bounded timeouts.
+One-shot `migrate` completes successfully before API/worker start. API startup never auto-creates tables or migrates; liveness remains healthy during a DB outage while readiness returns only a generic 503. Readiness requires exact schema revision `0002_verification`, rejects unknown/multiple revisions and avoids printing database errors. Connections, pool waits and SQL statements have bounded timeouts.
 
 For development migration inspection, from `apps/backend` with an explicit `AION_DATABASE_URL_FILE` pointing to the local host secret:
 

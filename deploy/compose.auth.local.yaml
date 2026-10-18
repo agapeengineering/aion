@@ -1,0 +1,53 @@
+# Explicit opt-in development capture only. Never deploy this override to a public host.
+services:
+  api:
+    environment:
+      AION_AUTH_ENABLED: "true"
+      AION_AUTH_ORIGIN: https://127.0.0.1:18443
+      AION_AUTH_SECRETS_FILE: /run/secrets/auth_keys
+      AION_LOCAL_MAIL_CAPTURE: "true"
+    secrets: [database_url, auth_keys]
+  worker:
+    environment:
+      AION_AUTH_ENABLED: "true"
+      AION_AUTH_ORIGIN: https://127.0.0.1:18443
+      AION_AUTH_SECRETS_FILE: /run/secrets/auth_keys
+      AION_LOCAL_MAIL_CAPTURE: "true"
+    secrets: [database_url, auth_keys]
+  web:
+    ports: ["127.0.0.1:18443:8443"]
+    volumes:
+      - ../.local/auth/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    secrets: [dev_cert, dev_key]
+  mailpit:
+    image: axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387
+    user: "10001:10001"
+    environment:
+      MP_DATABASE: /tmp/capture.db
+      MP_MAX_MESSAGES: "40"
+      MP_MAX_AGE: 1h
+      MP_DISABLE_VERSION_CHECK: "true"
+      MP_SMTP_DISABLE_RDNS: "true"
+      MP_SMTP_ALLOWED_RECIPIENTS: '@example\.test$$'
+      MP_IGNORE_DUPLICATE_IDS: "true"
+      MP_BLOCK_REMOTE_CSS_AND_FONTS: "true"
+      MP_QUIET: "true"
+    networks: [database]
+    ports: ["127.0.0.1:18025:8025"]
+    read_only: true
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 96m
+    cpus: 0.25
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options: {max-size: "1m", max-file: "1"}
+secrets:
+  auth_keys:
+    file: ../.local/auth/keys.json
+  dev_cert:
+    file: ../.local/auth/tls.crt
+  dev_key:
+    file: ../.local/auth/tls.key

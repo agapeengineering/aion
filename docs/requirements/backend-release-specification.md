@@ -1,8 +1,8 @@
 # Aion R2 — optional accounts, sync and email reminders
 
-Version: **1.0.0**. Status: **Accepted R2 baseline — local foundation implemented; account release not implemented or deployed**. Accepted: 2026-10-17. Owner: Agape Engineering.
+Version: **1.0.0**. Status: **Accepted R2 baseline — local foundation and signup/login implemented; account release incomplete and not deployed**. Accepted: 2026-10-17. Owner: Agape Engineering.
 
-This accepted amendment specifies the first Aion backend and the corresponding web changes. The [R1 specification](web-release-specification.md) and [0.1.0 release record](../releases/0.1.0.md) describe the existing local-only release. The [foundation verification record](../testing/backend-foundation.md) describes implemented local health/schema/container groundwork; accounts, sync, mail and infrastructure migration remain unimplemented. [ADR-0002](../architecture/decisions/0002-optional-account-backend.md) supplies the deployment design. Requirement acceptance is distinct from implementation evidence.
+This accepted amendment specifies the first Aion backend and the corresponding web changes. The [R1 specification](web-release-specification.md) and [0.1.0 release record](../releases/0.1.0.md) describe the existing local-only release. The [foundation verification record](../testing/backend-foundation.md) describes implemented local health/schema/container groundwork; The [signup/login verification record](../testing/email-code-auth.md) covers the subsequent local authentication slice. Sync, reminders, other account lifecycle operations, provider delivery and infrastructure migration remain unimplemented. [ADR-0002](../architecture/decisions/0002-optional-account-backend.md) supplies the deployment design. Requirement acceptance is distinct from implementation evidence.
 
 ## Purpose and scope
 
