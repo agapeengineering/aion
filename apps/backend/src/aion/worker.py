@@ -12,7 +12,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from aion.auth import AuthService, utc_now
 from aion.config import Settings
 from aion.database import is_ready, make_engine
-from aion.verification_mail import LocalCapture, cleanup_expired, deliver_pending
+from aion.resend_mail import ResendSender
+from aion.verification_mail import LocalCapture, Sender, cleanup_expired, deliver_pending
 
 HEARTBEAT = Path("/tmp/aion-worker-heartbeat")
 
@@ -41,15 +42,20 @@ def main() -> int:
     for signum in (signal.SIGTERM, signal.SIGINT):
         signal.signal(signum, lambda *_: stop.set())
     previous = None
-    auth = AuthService(engine, settings) if settings.auth_enabled else None
     try:
+        auth = AuthService(engine, settings) if settings.auth_enabled else None
+        sender: Sender | None = None
+        if settings.resend_enabled:
+            sender = ResendSender(settings)
+        elif settings.local_mail_capture:
+            sender = LocalCapture()
         while not stop.is_set():
             available = is_ready(engine)
             if available:
                 try:
                     cleanup_expired(engine, utc_now())
-                    if auth is not None and settings.local_mail_capture:
-                        deliver_pending(engine, auth.keys, LocalCapture(), utc_now())
+                    if auth is not None and sender is not None:
+                        deliver_pending(engine, auth.keys, sender, utc_now())
                 except SQLAlchemyError:
                     available = False
             if available:
@@ -59,7 +65,7 @@ def main() -> int:
             if previous != available:
                 logging.info("worker_ready" if available else "worker_unavailable")
                 previous = available
-            stop.wait(2 if settings.local_mail_capture else 15)
+            stop.wait(2 if sender is not None else 15)
     finally:
         HEARTBEAT.unlink(missing_ok=True)
         engine.dispose()

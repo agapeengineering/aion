@@ -1,17 +1,22 @@
 """Sealed verification outbox with injectable sender and a synthetic local-only SMTP adapter."""
 
 import json
+import random
 import smtplib
+import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from typing import Protocol
 
 from cryptography.fernet import InvalidToken
-from sqlalchemy import Engine, delete, select, update
+from sqlalchemy import Connection, Engine, case, delete, select, text, update
 from sqlalchemy.orm import Session as DbSession
 
-from aion.auth import AuthKeys, lock_email
+from aion.auth import AuthKeys
+from aion.mail_content import verification_content
 from aion.models import EmailChallenge, RateLimitBucket, Session, VerificationMail
 
 
@@ -20,10 +25,11 @@ class Message:
     email: str
     code: str
     language: str
+    provider_payload: dict[str, object] | None = None
 
 
 class Sender(Protocol):
-    def send(self, message: Message, key: str) -> None: ...
+    def send(self, message: Message, key: str) -> str | None: ...
 
 
 class LocalCapture:
@@ -33,82 +39,140 @@ class LocalCapture:
         mail = EmailMessage()
         mail["From"], mail["To"] = "Aion <aion@example.test>", message.email
         mail["Message-ID"] = f"<{key}@aion.example.test>"
-        mail["Subject"] = (
-            "Tu código de Aion" if message.language == "es" else "Your Aion sign-in code"
-        )
-        mail.set_content(
-            (
-                f"Tu código es {message.code}. Caduca en diez minutos. "
-                "Si no lo solicitaste, ignora este correo."
-            )
-            if message.language == "es"
-            else (
-                f"Your code is {message.code}. It expires in ten minutes. "
-                "If you did not request this, ignore this email."
-            )
-        )
+        subject, body = verification_content(message.code, message.language)
+        mail["Subject"] = subject
+        mail.set_content(body)
         with smtplib.SMTP("mailpit", 1025, timeout=3) as smtp:
             smtp.send_message(mail)
 
 
+class RetryDeliveryError(Exception):
+    def __init__(self, retry_after: float = 0, *, uncertain: bool = False) -> None:
+        self.retry_after = retry_after
+        self.uncertain = uncertain
+        super().__init__("Mail provider temporarily unavailable")
+
+
+class PermanentDeliveryError(Exception):
+    def __init__(self) -> None:
+        super().__init__("Mail provider rejected the request")
+
+
+def terminal(job: VerificationMail, fallback: str) -> None:
+    job.status = "uncertain" if job.acceptance_unknown else fallback
+    job.encrypted_payload = None
+
+
+def retry(job: VerificationMail, now: datetime, delay: float = 0) -> None:
+    seconds = max(delay, min(60, 2**job.attempts) + random.uniform(0, 1))
+    due = now + timedelta(seconds=seconds)
+    if job.attempts >= 6 or due >= job.expires_at:
+        terminal(job, "failed")
+    else:
+        job.next_attempt_at = due
+
+
+@contextmanager
+def delivery_lock(engine: Engine, keys: AuthKeys, email: str) -> Iterator[Connection]:
+    # Session advisory locks conflict with auth's transaction advisory locks. Keep
+    # the send barrier across commits so the pre-send uncertainty marker is durable.
+    key = int.from_bytes(keys.digest("email_lock", email)[:8], signed=True)
+    with engine.connect() as connection:
+        connection.execute(text("SELECT pg_advisory_lock(:key)"), {"key": key})
+        connection.commit()
+        try:
+            yield connection
+        finally:
+            try:
+                connection.rollback()
+                connection.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": key})
+                connection.commit()
+            except Exception:
+                connection.invalidate()
+                raise
+
+
 def deliver_pending(engine: Engine, keys: AuthKeys, sender: Sender, now: datetime) -> int:
     sent = 0
+    started = time.monotonic()
     with DbSession(engine) as db:
-        ids = list(
-            db.scalars(
-                select(VerificationMail.id)
+        candidates = list(
+            db.execute(
+                select(VerificationMail.id, EmailChallenge.email)
+                .join(EmailChallenge, EmailChallenge.id == VerificationMail.challenge_id)
                 .where(
                     VerificationMail.status == "pending", VerificationMail.next_attempt_at <= now
                 )
                 .order_by(VerificationMail.next_attempt_at)
-                .limit(20)
+                .limit(5)
             )
         )
-    for job_id in ids:
-        with DbSession(engine) as db, db.begin():
-            candidate = db.get(VerificationMail, job_id)
-            if candidate is None:
-                continue
-            challenge = db.get(EmailChallenge, candidate.challenge_id)
-            if challenge is None:
-                continue
-            lock_email(db, challenge.email, keys)
-            db.refresh(challenge)
-            job = db.scalars(
-                select(VerificationMail)
-                .where(VerificationMail.id == job_id)
-                .with_for_update(skip_locked=True)
-                .execution_options(populate_existing=True)
-            ).first()
-            if job is None or job.status != "pending" or job.next_attempt_at > now:
-                continue
-            if (
-                challenge.consumed_at is not None
-                or challenge.invalidated_at is not None
-                or challenge.expires_at <= now
-                or job.expires_at <= now
-            ):
-                job.status, job.encrypted_payload = "cancelled", None
-                continue
-            try:
-                assert job.encrypted_payload is not None
-                payload = json.loads(keys.seal.decrypt(job.encrypted_payload))
-                if payload["email"] != challenge.email:
-                    raise ValueError("Payload identity mismatch")
-                job.attempts += 1
-                sender.send(
-                    Message(payload["email"], payload["code"], payload["language"]), str(job.id)
-                )
-            except InvalidToken, ValueError, KeyError:
-                job.status, job.encrypted_payload = "failed", None
-            except OSError, smtplib.SMTPException:
+    for job_id, email in candidates:
+        dispatch_now = now + timedelta(seconds=time.monotonic() - started)
+        with delivery_lock(engine, keys, email) as connection:
+            with DbSession(bind=connection) as db, db.begin():
+                job = db.get(VerificationMail, job_id, with_for_update=True)
+                if job is None or job.status != "pending" or job.next_attempt_at > dispatch_now:
+                    continue
+                challenge = db.get(EmailChallenge, job.challenge_id)
+                if (
+                    challenge is None
+                    or challenge.consumed_at is not None
+                    or challenge.invalidated_at is not None
+                    or challenge.expires_at <= dispatch_now
+                    or job.expires_at <= dispatch_now
+                ):
+                    terminal(job, "cancelled")
+                    continue
+                try:
+                    assert job.encrypted_payload is not None
+                    payload = json.loads(keys.seal.decrypt(job.encrypted_payload))
+                    if payload["email"] != challenge.email:
+                        raise ValueError("Payload identity mismatch")
+                    message = Message(
+                        payload["email"],
+                        payload["code"],
+                        payload["language"],
+                        payload.get("resend"),
+                    )
+                except InvalidToken, ValueError, KeyError:
+                    terminal(job, "failed")
+                    continue
                 if job.attempts >= 6:
-                    job.status, job.encrypted_payload = "failed", None
+                    terminal(job, "failed")
+                    continue
+                prior_unknown = job.acceptance_unknown
+                job.attempts += 1
+                # Commit before network I/O: a crash may have sent mail. The same
+                # sealed payload/key can be retried only within the code expiry.
+                job.acceptance_unknown = True
+            provider_id = None
+            outcome = "accepted"
+            delay = 0.0
+            uncertain = False
+            try:
+                provider_id = sender.send(message, str(job_id))
+            except ValueError, PermanentDeliveryError:
+                outcome = "failed"
+            except RetryDeliveryError as error:
+                outcome, delay, uncertain = "retry", error.retry_after, error.uncertain
+            except OSError, smtplib.SMTPException:
+                outcome, uncertain = "retry", True
+            with DbSession(bind=connection) as db, db.begin():
+                job = db.get(VerificationMail, job_id, with_for_update=True)
+                if job is None:
+                    continue
+                job.acceptance_unknown = prior_unknown or uncertain
+                if outcome == "failed":
+                    terminal(job, "failed")
+                elif outcome == "retry":
+                    retry(job, now + timedelta(seconds=time.monotonic() - started), delay)
                 else:
-                    job.next_attempt_at = now + timedelta(seconds=min(60, 2**job.attempts))
-            else:
-                job.status, job.encrypted_payload = "sent", None
-                sent += 1
+                    job.provider_message_id = provider_id
+                    job.acceptance_unknown = False
+                    job.status = "accepted" if provider_id else "sent"
+                    job.encrypted_payload = None
+                    sent += 1
     return sent
 
 
@@ -119,7 +183,10 @@ def cleanup_expired(engine: Engine, now: datetime) -> None:
             .where(
                 VerificationMail.expires_at <= now, VerificationMail.encrypted_payload.is_not(None)
             )
-            .values(status="cancelled", encrypted_payload=None)
+            .values(
+                status=case((VerificationMail.acceptance_unknown, "uncertain"), else_="cancelled"),
+                encrypted_payload=None,
+            )
         )
         db.execute(
             delete(EmailChallenge).where(EmailChallenge.expires_at <= now - timedelta(hours=24))

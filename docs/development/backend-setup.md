@@ -48,7 +48,7 @@ Local HTTP omits the production-only upgrade policy so browser tests can load th
 
 ## Migrations and contracts
 
-One-shot `migrate` completes successfully before API/worker start. API startup never auto-creates tables or migrates; liveness remains healthy during a DB outage while readiness returns only a generic 503. Readiness requires exact schema revision `0002_verification`, rejects unknown/multiple revisions and avoids printing database errors. Connections, pool waits and SQL statements have bounded timeouts.
+One-shot `migrate` completes successfully before API/worker start. API startup never auto-creates tables or migrates; liveness remains healthy during a DB outage while readiness returns only a generic 503. Readiness requires exact schema revision `0003_mail_result`, rejects unknown/multiple revisions and avoids printing database errors. Connections, pool waits and SQL statements have bounded timeouts.
 
 For development migration inspection, from `apps/backend` with an explicit `AION_DATABASE_URL_FILE` pointing to the local host secret:
 

@@ -41,7 +41,7 @@ See [development setup](docs/development/setup.md) for CI, offline-after-load li
 
 ## Backend foundation
 
-The local FastAPI/PostgreSQL backend includes explicit migrations, email-code signup/login, secure cookie sessions and an encrypted verification-mail queue. An opt-in EN/ES account UI and local Mailpit inbox allow end-to-end testing over HTTPS. See [account setup](docs/development/account-setup.md), [authentication contract](docs/api/authentication-contract.md) and [verification](docs/testing/email-code-auth.md). This slice does not enable profile sync, reminders, the remaining account lifecycle or public accounts. No cloud/email provider configuration is changed.
+The local FastAPI/PostgreSQL backend includes explicit migrations, email-code signup/login, secure cookie sessions and an encrypted verification-mail queue. An opt-in EN/ES account UI and local Mailpit inbox allow end-to-end testing over HTTPS. See [account setup](docs/development/account-setup.md), [authentication contract](docs/api/authentication-contract.md) and [verification](docs/testing/email-code-auth.md). This slice does not enable profile sync, reminders, the remaining account lifecycle or public accounts. An [opt-in Resend adapter](docs/development/resend-setup.md) supports controlled allowlisted email tests; default capture remains local. No cloud/email provider configuration is changed.
 
 ## Documentation
 

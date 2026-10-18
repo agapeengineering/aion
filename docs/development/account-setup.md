@@ -25,4 +25,4 @@ AION_AUTH_TESTS=1 AION_BASE_URL=https://127.0.0.1:18443 pnpm exec playwright tes
 
 Browser tests use unique synthetic recipients and poll the local capture API. Authentication tests disable screenshots/traces/videos to avoid recording codes or cookies. The default web regression build remains `pnpm check` followed by `pnpm test:e2e`. See [authentication contract](../api/authentication-contract.md), [database diagram](../architecture/database.md) and [verification record](../testing/email-code-auth.md).
 
-Remaining work includes provider delivery/idempotency, trusted proxy client IPs, restricted runtime DB grants, re-verification/session management, export/deletion, sync, reminders, recovery and R2 release gates. A local sign-in is not the complete account release.
+For controlled real delivery, see [Resend setup](resend-setup.md). Remaining work includes live provider verification/webhooks/suppression, trusted proxy client IPs, restricted runtime DB grants, re-verification/session management, export/deletion, sync, reminders, recovery and R2 release gates. A local sign-in is not the complete account release.

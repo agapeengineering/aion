@@ -16,11 +16,12 @@ from email_validator import EmailNotValidError, validate_email
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import Engine, select, text, update
+from sqlalchemy import Engine, case, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session as DbSession
 
 from aion.config import Settings
+from aion.mail_content import verification_payload
 from aion.models import EmailChallenge, RateLimitBucket, Session, User, VerificationMail
 
 SESSION_COOKIE = "__Host-aion_session"
@@ -139,6 +140,7 @@ class AuthService:
             raise ValueError("Authentication requires an exact HTTPS origin")
         if settings.local_mail_capture and origin.hostname not in {"127.0.0.1", "localhost"}:
             raise ValueError("Local mail capture requires a loopback HTTPS origin")
+        self.settings = settings
         self.engine = engine
         self.origin = settings.auth_origin
         self.keys = AuthKeys(settings)
@@ -162,6 +164,8 @@ class AuthService:
             email = address.lower()
         except EmailNotValidError:
             raise AuthError(422, "invalid_email") from None
+        if self.settings.resend_enabled and email not in self.settings.resend_allowed_recipients:
+            raise AuthError(422, "email_not_allowed")
         now = self.clock()
         error: AuthError | None = None
         challenge_id, browser = uuid.uuid4(), secrets.token_urlsafe(32)
@@ -196,7 +200,13 @@ class AuthService:
                             VerificationMail.challenge_id.in_(old_ids),
                             VerificationMail.status == "pending",
                         )
-                        .values(status="cancelled", encrypted_payload=None)
+                        .values(
+                            status=case(
+                                (VerificationMail.acceptance_unknown, "uncertain"),
+                                else_="cancelled",
+                            ),
+                            encrypted_payload=None,
+                        )
                     )
                     db.execute(
                         update(EmailChallenge)
@@ -223,7 +233,20 @@ class AuthService:
                         )
                     )
                     db.flush()
-                    payload = json.dumps({"email": email, "code": code, "language": value.language})
+                    content: dict[str, object] = {
+                        "email": email,
+                        "code": code,
+                        "language": value.language,
+                    }
+                    if self.settings.resend_enabled:
+                        content["resend"] = verification_payload(
+                            email,
+                            code,
+                            value.language,
+                            self.settings.email_from,
+                            self.settings.email_reply_to,
+                        )
+                    payload = json.dumps(content)
                     db.add(
                         VerificationMail(
                             challenge_id=challenge_id,
@@ -286,7 +309,13 @@ class AuthService:
                                         VerificationMail.challenge_id == challenge.id,
                                         VerificationMail.status == "pending",
                                     )
-                                    .values(status="cancelled", encrypted_payload=None)
+                                    .values(
+                                        status=case(
+                                            (VerificationMail.acceptance_unknown, "uncertain"),
+                                            else_="cancelled",
+                                        ),
+                                        encrypted_payload=None,
+                                    )
                                 )
                                 previous = request.cookies.get(SESSION_COOKIE)
                                 if previous:

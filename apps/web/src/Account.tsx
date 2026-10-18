@@ -23,6 +23,7 @@ const words = {
     failed: 'The account service is unavailable. Your local calendar is still usable.',
     limited: 'Please wait before trying again.',
     address: 'Enter a valid email address.',
+    allowed: 'This preview sends codes only to configured test recipients.',
     local:
       'Local test: use person@example.test. Emails appear only in the local test inbox; no external email is sent.',
   },
@@ -47,6 +48,7 @@ const words = {
     failed: 'El servicio de cuentas no está disponible. Tu calendario local sigue funcionando.',
     limited: 'Espera antes de intentarlo de nuevo.',
     address: 'Introduce un correo válido.',
+    allowed: 'Esta vista previa solo envía códigos a los destinatarios de prueba configurados.',
     local:
       'Prueba local: usa person@example.test. Los correos solo aparecen en la bandeja de prueba local; no se envía correo externo.',
   },
@@ -122,15 +124,17 @@ export function Account({ language }: { language: Language }) {
   }, [challenge]);
   const cooldown = Math.max(0, Math.ceil((until - now) / 1000));
   const errorText =
-    error === 'verification_failed'
-      ? c.invalid
-      : error === 'rate_limited'
-        ? c.limited
-        : error === 'invalid_email'
-          ? c.address
-          : error
-            ? c.failed
-            : '';
+    error === 'email_not_allowed'
+      ? c.allowed
+      : error === 'verification_failed'
+        ? c.invalid
+        : error === 'rate_limited'
+          ? c.limited
+          : error === 'invalid_email'
+            ? c.address
+            : error
+              ? c.failed
+              : '';
   async function perform(operation: () => Promise<void>) {
     setBusy(true);
     setError('');

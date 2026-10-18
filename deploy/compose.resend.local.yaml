@@ -1,0 +1,18 @@
+# Controlled local real-email test only; layer LAST after compose.auth.local.yaml.
+# The API receives sender/allowlist config, but only the worker mounts the provider key.
+services:
+  api:
+    env_file: ../.local/resend/settings.env
+    environment:
+      AION_LOCAL_MAIL_CAPTURE: "false"
+      AION_RESEND_ENABLED: "true"
+  worker:
+    env_file: ../.local/resend/settings.env
+    environment:
+      AION_LOCAL_MAIL_CAPTURE: "false"
+      AION_RESEND_ENABLED: "true"
+      AION_RESEND_API_KEY_FILE: /run/secrets/resend_api_key
+    secrets: [database_url, auth_keys, resend_api_key]
+secrets:
+  resend_api_key:
+    file: ../.local/resend/api-key

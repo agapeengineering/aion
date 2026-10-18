@@ -1,8 +1,10 @@
 """Explicit configuration; never infer production credentials or read a tracked .env."""
 
+from email.utils import formataddr, parseaddr
 from pathlib import Path
 from typing import Self
 
+from email_validator import EmailNotValidError, validate_email
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
@@ -18,6 +20,42 @@ class Settings(BaseSettings):
     auth_origin: str = "https://aion.agape.engineering"
     auth_secrets_file: Path | None = None
     local_mail_capture: bool = False
+
+    resend_enabled: bool = False
+    resend_api_key_file: Path | None = None
+    email_from: str = "Aion <aion@mail.agape.engineering>"
+    email_reply_to: str = ""
+    resend_allowed_recipients: list[str] = []
+
+    @model_validator(mode="after")
+    def validate_mail(self) -> Self:
+        if not self.resend_enabled:
+            return self
+        if self.local_mail_capture or not self.auth_enabled:
+            raise ValueError("Resend requires enabled auth and disabled local capture")
+        try:
+
+            def mailbox(value: str) -> str:
+                if "\r" in value or "\n" in value:
+                    raise ValueError
+                return validate_email(
+                    value,
+                    check_deliverability=False,
+                    allow_smtputf8=False,
+                    test_environment=True,
+                ).normalized.lower()
+
+            name, address = parseaddr(self.email_from, strict=True)
+            self.email_from = formataddr((name, mailbox(address)))
+            self.email_reply_to = mailbox(self.email_reply_to)
+            self.resend_allowed_recipients = [mailbox(x) for x in self.resend_allowed_recipients]
+            if not self.resend_allowed_recipients:
+                raise ValueError
+        except ValueError, EmailNotValidError:
+            raise ValueError(
+                "Resend requires valid sender, Reply-To and explicit test recipients"
+            ) from None
+        return self
 
     @model_validator(mode="after")
     def validate_database(self) -> Self:

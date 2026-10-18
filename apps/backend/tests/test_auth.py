@@ -319,3 +319,118 @@ def test_csrf_nonce_cannot_revoke_another_identity(auth):
     client.cookies.clear()
     client.cookies.set(SESSION_COOKIE, first_token)
     assert client.get("/api/v1/me").json()["email"] == "first@example.test"
+
+
+def test_resend_outbox_freezes_payload_and_tracks_provider_acceptance(auth, tmp_path):
+    import uuid
+
+    from aion.resend_mail import ProviderResponse, ResendSender
+
+    client, service, now, _ = auth
+    service.settings.resend_enabled = True
+    service.settings.resend_allowed_recipients = ["person@example.test"]
+    service.settings.email_reply_to = "support@example.test"
+    key = tmp_path / "resend-key"
+    key.write_text("re_synthetic_not_a_real_key")
+    service.settings.resend_api_key_file = key
+    assert (
+        client.post("/api/v1/auth/challenges", json={"email": "person@example.test"}).status_code
+        == 202
+    )
+    assert (
+        client.post("/api/v1/auth/challenges", json={"email": "blocked@example.test"}).json()[
+            "error"
+        ]["code"]
+        == "email_not_allowed"
+    )
+    requests = []
+    provider_id = str(uuid.uuid4())
+
+    def transport(secret, payload, logical_key):
+        requests.append((payload, logical_key))
+        if len(requests) == 1:
+            return ProviderResponse(429, {"Retry-After": "20"}, b"{}")
+        return ProviderResponse(200, {}, json.dumps({"id": provider_id}).encode())
+
+    sender = ResendSender(service.settings, transport)
+    assert deliver_pending(service.engine, service.keys, sender, now[0]) == 0
+    service.settings.email_reply_to = "changed@example.test"
+    now[0] += timedelta(seconds=21)
+    assert deliver_pending(service.engine, service.keys, sender, now[0]) == 1
+    assert requests[0] == requests[1]
+    assert requests[1][0]["reply_to"] == "support@example.test"
+    with DbSession(service.engine) as db:
+        job = db.scalars(select(VerificationMail)).one()
+        assert job.status == "accepted" and job.provider_message_id == provider_id
+        assert job.attempts == 2 and not job.acceptance_unknown
+        assert job.encrypted_payload is None
+
+
+def test_delivery_crash_persists_uncertainty_and_expiry_never_resends(auth):
+    client, service, now, inbox = auth
+    client.post("/api/v1/auth/challenges", json={"email": "person@example.test"})
+
+    class Crash:
+        def send(self, message, key):
+            raise SystemExit("simulated crash after unknown provider acceptance")
+
+    with pytest.raises(SystemExit):
+        deliver_pending(service.engine, service.keys, Crash(), now[0])
+    with DbSession(service.engine) as db:
+        job = db.scalars(select(VerificationMail)).one()
+        assert job.status == "pending" and job.attempts == 1 and job.acceptance_unknown
+    now[0] += timedelta(minutes=11)
+    cleanup_expired(service.engine, now[0])
+    assert deliver_pending(service.engine, service.keys, inbox, now[0]) == 0
+    with DbSession(service.engine) as db:
+        job = db.scalars(select(VerificationMail)).one()
+        assert job.status == "uncertain" and job.encrypted_payload is None
+    assert not inbox.messages
+
+
+def test_provider_acceptance_after_crash_reuses_one_logical_send(auth):
+    import uuid
+
+    client, service, now, _ = auth
+    client.post("/api/v1/auth/challenges", json={"email": "person@example.test"})
+    accepted = {}
+    calls = []
+
+    class Provider:
+        def send(self, message, key):
+            calls.append(key)
+            if key not in accepted:
+                accepted[key] = str(uuid.uuid4())
+                raise SystemExit("simulated crash after provider accepted")
+            return accepted[key]
+
+    with pytest.raises(SystemExit):
+        deliver_pending(service.engine, service.keys, Provider(), now[0])
+    assert deliver_pending(service.engine, service.keys, Provider(), now[0]) == 1
+    assert len(accepted) == 1 and len(calls) == 2 and calls[0] == calls[1]
+    with DbSession(service.engine) as db:
+        job = db.scalars(select(VerificationMail)).one()
+        assert job.status == "accepted" and job.provider_message_id == accepted[calls[0]]
+        assert job.encrypted_payload is None and not job.acceptance_unknown
+
+
+def test_concurrent_delivery_workers_dispatch_only_once(auth):
+    import time
+
+    client, service, now, _ = auth
+    client.post("/api/v1/auth/challenges", json={"email": "person@example.test"})
+    calls = []
+
+    class Provider:
+        def send(self, message, key):
+            calls.append(key)
+            time.sleep(0.1)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(
+            pool.map(
+                lambda _: deliver_pending(service.engine, service.keys, Provider(), now[0]),
+                range(2),
+            )
+        )
+    assert sum(results) == 1 and len(calls) == 1

@@ -126,7 +126,10 @@ class VerificationMail(Base):
 
     __tablename__ = "verification_mail"
     __table_args__ = (
-        CheckConstraint("status IN ('pending', 'sent', 'cancelled', 'failed')", name="status"),
+        CheckConstraint(
+            "status IN ('pending', 'sent', 'accepted', 'cancelled', 'failed', 'uncertain')",
+            name="status",
+        ),
         CheckConstraint("attempts BETWEEN 0 AND 6", name="attempt_range"),
         Index("ix_verification_mail_due", "status", "next_attempt_at"),
     )
@@ -139,3 +142,6 @@ class VerificationMail(Base):
     attempts: Mapped[int] = mapped_column(server_default="0")
     next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    provider_message_id: Mapped[str | None] = mapped_column(String(64))
+    acceptance_unknown: Mapped[bool] = mapped_column(server_default="false")
