@@ -1,6 +1,45 @@
 {
   "components": {
     "schemas": {
+      "AccountExport": {
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/ExportIdentity"
+          },
+          "calendar": {
+            "$ref": "#/components/schemas/ProfileSnapshot"
+          },
+          "exported_at": {
+            "format": "date-time",
+            "title": "Exported At",
+            "type": "string"
+          },
+          "reminder_preferences": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExportReminder"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "const": 1,
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "exported_at",
+          "account",
+          "calendar",
+          "reminder_preferences"
+        ],
+        "title": "AccountExport",
+        "type": "object"
+      },
       "ChallengeInput": {
         "additionalProperties": false,
         "properties": {
@@ -67,6 +106,121 @@
           "csrf_token"
         ],
         "title": "CsrfResult",
+        "type": "object"
+      },
+      "DeleteInput": {
+        "additionalProperties": false,
+        "properties": {
+          "confirmation": {
+            "const": "delete",
+            "title": "Confirmation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirmation"
+        ],
+        "title": "DeleteInput",
+        "type": "object"
+      },
+      "ExportIdentity": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "verified_at": {
+            "format": "date-time",
+            "title": "Verified At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "created_at",
+          "verified_at"
+        ],
+        "title": "ExportIdentity",
+        "type": "object"
+      },
+      "ExportReminder": {
+        "properties": {
+          "consent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent At"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "frequency": {
+            "enum": [
+              "daily",
+              "weekly"
+            ],
+            "title": "Frequency",
+            "type": "string"
+          },
+          "include_phrase": {
+            "title": "Include Phrase",
+            "type": "boolean"
+          },
+          "language": {
+            "enum": [
+              "en",
+              "es"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "notice_version": {
+            "title": "Notice Version",
+            "type": "string"
+          },
+          "send_time": {
+            "title": "Send Time",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          },
+          "weekday": {
+            "title": "Weekday",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "frequency",
+          "timezone",
+          "send_time",
+          "weekday",
+          "language",
+          "include_phrase",
+          "consent_at",
+          "notice_version"
+        ],
+        "title": "ExportReminder",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -366,6 +520,101 @@
         "title": "ReminderSnapshot",
         "type": "object"
       },
+      "ReverifyInput": {
+        "additionalProperties": false,
+        "properties": {
+          "language": {
+            "default": "en",
+            "enum": [
+              "en",
+              "es"
+            ],
+            "title": "Language",
+            "type": "string"
+          }
+        },
+        "title": "ReverifyInput",
+        "type": "object"
+      },
+      "SessionItem": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current": {
+            "title": "Current",
+            "type": "boolean"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_seen_at": {
+            "format": "date-time",
+            "title": "Last Seen At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "last_seen_at",
+          "expires_at",
+          "current"
+        ],
+        "title": "SessionItem",
+        "type": "object"
+      },
+      "SessionList": {
+        "properties": {
+          "reverified_for": {
+            "maximum": 600.0,
+            "minimum": 0.0,
+            "title": "Reverified For",
+            "type": "integer"
+          },
+          "reverified_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reverified Until"
+          },
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/SessionItem"
+            },
+            "title": "Sessions",
+            "type": "array"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "reverified_until",
+          "reverified_for",
+          "sessions"
+        ],
+        "title": "SessionList",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -406,6 +655,27 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "VerifiedResult": {
+        "properties": {
+          "reverified_for": {
+            "maximum": 600.0,
+            "minimum": 0.0,
+            "title": "Reverified For",
+            "type": "integer"
+          },
+          "reverified_until": {
+            "format": "date-time",
+            "title": "Reverified Until",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reverified_until",
+          "reverified_for"
+        ],
+        "title": "VerifiedResult",
+        "type": "object"
+      },
       "VerifyInput": {
         "additionalProperties": false,
         "properties": {
@@ -435,6 +705,89 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/account": {
+      "delete": {
+        "operationId": "delete_account_api_v1_account_delete",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Account"
+      }
+    },
+    "/api/v1/account/export": {
+      "get": {
+        "operationId": "export_account_api_v1_account_export_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountExport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Account"
+      }
+    },
     "/api/v1/auth/challenges": {
       "post": {
         "operationId": "challenge_endpoint_api_v1_auth_challenges_post",
@@ -500,6 +853,106 @@
           }
         },
         "summary": "Logout Endpoint"
+      }
+    },
+    "/api/v1/auth/reverify": {
+      "post": {
+        "operationId": "verify_again_api_v1_auth_reverify_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifiedResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Again"
+      }
+    },
+    "/api/v1/auth/reverify/challenges": {
+      "post": {
+        "operationId": "request_reverification_api_v1_auth_reverify_challenges_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverifyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request Reverification"
       }
     },
     "/api/v1/auth/verify": {
@@ -883,6 +1336,120 @@
           }
         },
         "summary": "Put Preferences"
+      }
+    },
+    "/api/v1/sessions": {
+      "delete": {
+        "operationId": "revoke_all_api_v1_sessions_delete",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke All"
+      },
+      "get": {
+        "operationId": "sessions_api_v1_sessions_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sessions"
+      }
+    },
+    "/api/v1/sessions/{identifier}": {
+      "delete": {
+        "operationId": "revoke_session_api_v1_sessions__identifier__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "identifier",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Identifier",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Session"
       }
     },
     "/api/v1/unsubscribe/{token}": {

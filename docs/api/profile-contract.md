@@ -33,3 +33,6 @@ Refresh occurs at sign-in, foreground, reconnect and before a mutation, plus eve
 Sign-out warns before discarding pending edits, revokes the session online and clears the account cache/marker; the guest calendar returns. Observed expiry, revocation or account mismatch clears the previous account state before any replay. Offline devices cannot learn revocation until reconnecting. Other devices observe profile reset on refresh; stale pending edits require explicit conflict review before recreation.
 
 See [verification and limitations](../testing/profile-sync.md). Remaining account lifecycle, reminders and EC2 release gates are separate work.
+
+
+Account termination and reverification now pause new sync refreshes, invalidate stale callbacks and wait for already-issued work. Queued edits are not uploaded during that transition; a request already accepted by the server cannot be recalled. A cross-tab session rotation permits one retry only for an explicit `csrf_failed` response, using a fresh nonce with the unchanged profile body/revision/idempotency key. Other forbidden writes remain failures. See the [account management contract](account-management-contract.md).

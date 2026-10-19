@@ -31,16 +31,45 @@ COPY = {
 }
 
 
-def wording(code: str, language: str) -> dict[str, str]:
+def wording(code: str, language: str, purpose: str = "login") -> dict[str, str]:
     if not re.fullmatch(r"[0-9]{8}", code):
         raise ValueError("Verification code must contain eight digits")
     if language not in COPY:
         raise ValueError("Unsupported email language")
-    return COPY[language]
+    if purpose == "login":
+        return COPY[language]
+    if purpose != "reverify":
+        raise ValueError("Unsupported verification purpose")
+    return {
+        **COPY[language],
+        **(
+            {
+                "subject": "Confirm your Aion account action",
+                "preview": "Confirm your account action in Aion. Your code expires in 10 minutes.",
+                "heading": "Confirm it’s you.",
+                "intro": (
+                    "Enter this code in Aion to allow a sensitive account action. "
+                    "It does not sign you in on another device."
+                ),
+            }
+            if language == "en"
+            else {
+                "subject": "Confirma tu acción de cuenta en Aion",
+                "preview": "Confirma tu acción en Aion. Tu código caduca en 10 minutos.",
+                "heading": "Confirma que eres tú.",
+                "intro": (
+                    "Introduce este código en Aion para permitir una acción sensible de tu cuenta. "
+                    "No inicia sesión en otro dispositivo."
+                ),
+            }
+        ),
+    }
 
 
-def verification_content(code: str, language: str, reply_to: str) -> tuple[str, str]:
-    c = wording(code, language)
+def verification_content(
+    code: str, language: str, reply_to: str, purpose: str = "login"
+) -> tuple[str, str]:
+    c = wording(code, language, purpose)
     body = (
         f"Aion\n\n{c['heading']}\n\n{c['intro']}\n\n{code}\n\n{c['expiry']}\n\n"
         f"{c['security']}\n{c['ignore']}\n\n{c['help']} {reply_to}.\n\nAion by Agape\n"
@@ -48,8 +77,8 @@ def verification_content(code: str, language: str, reply_to: str) -> tuple[str, 
     return c["subject"], body
 
 
-def verification_html(code: str, language: str, reply_to: str) -> str:
-    c = {key: escape(value) for key, value in wording(code, language).items()}
+def verification_html(code: str, language: str, reply_to: str, purpose: str = "login") -> str:
+    c = {key: escape(value) for key, value in wording(code, language, purpose).items()}
     contact = escape(reply_to, quote=True)
     # Inline styles, presentation tables and system fonts survive email-client stripping.
     # The code remains a single uninterrupted text node for selection and auto-detection.
@@ -123,14 +152,14 @@ word-break:break-word;">{contact}</a>.</p>
 
 
 def verification_payload(
-    email: str, code: str, language: str, sender: str, reply_to: str
+    email: str, code: str, language: str, sender: str, reply_to: str, purpose: str = "login"
 ) -> dict[str, object]:
-    subject, body = verification_content(code, language, reply_to)
+    subject, body = verification_content(code, language, reply_to, purpose)
     return {
         "from": sender,
         "to": [email],
         "reply_to": reply_to,
         "subject": subject,
         "text": body,
-        "html": verification_html(code, language, reply_to),
+        "html": verification_html(code, language, reply_to, purpose),
     }

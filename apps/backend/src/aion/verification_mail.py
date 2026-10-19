@@ -35,6 +35,7 @@ class Message:
     code: str
     language: str
     provider_payload: dict[str, object] | None = None
+    purpose: str = "login"
 
 
 class Sender(Protocol):
@@ -54,9 +55,11 @@ class LocalCapture:
             html = str(payload["html"])
         else:
             subject, body = verification_content(
-                message.code, message.language, "support@example.test"
+                message.code, message.language, "support@example.test", message.purpose
             )
-            html = verification_html(message.code, message.language, "support@example.test")
+            html = verification_html(
+                message.code, message.language, "support@example.test", message.purpose
+            )
         mail["Subject"] = subject
         mail["Reply-To"] = "support@example.test"
         mail.set_content(body)
@@ -131,8 +134,8 @@ def deliver_pending(engine: Engine, keys: AuthKeys, sender: Sender, now: datetim
             )
         )
     for job_id, email in candidates:
-        dispatch_now = now + timedelta(seconds=time.monotonic() - started)
         with delivery_lock(engine, keys, email) as connection:
+            dispatch_now = now + timedelta(seconds=time.monotonic() - started)
             with DbSession(bind=connection) as db, db.begin():
                 job = db.get(VerificationMail, job_id, with_for_update=True)
                 if job is None or job.status != "pending" or job.next_attempt_at > dispatch_now:
@@ -148,6 +151,16 @@ def deliver_pending(engine: Engine, keys: AuthKeys, sender: Sender, now: datetim
                 ):
                     terminal(job, "cancelled")
                     continue
+                if challenge.purpose == "reverify":
+                    bound = db.get(Session, challenge.session_id)
+                    if (
+                        bound is None
+                        or bound.revoked_at is not None
+                        or bound.expires_at <= dispatch_now
+                        or bound.absolute_expires_at <= dispatch_now
+                    ):
+                        terminal(job, "cancelled")
+                        continue
                 try:
                     assert job.encrypted_payload is not None
                     payload = json.loads(keys.seal.decrypt(job.encrypted_payload))
@@ -158,6 +171,7 @@ def deliver_pending(engine: Engine, keys: AuthKeys, sender: Sender, now: datetim
                         payload["code"],
                         payload["language"],
                         payload.get("resend"),
+                        payload.get("purpose", "login"),
                     )
                 except InvalidToken, ValueError, KeyError:
                     terminal(job, "failed")

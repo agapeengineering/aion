@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException
 from starlette.responses import Response
 
+from aion.accounts import router as account_router
 from aion.auth import AuthError, AuthService, router
 from aion.config import Settings
 from aion.database import is_ready, make_engine
@@ -79,6 +80,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(status_code=503, content={"error": {"code": "unavailable"}})
 
     app.include_router(router)
+    app.include_router(account_router)
     app.include_router(profile_router)
     app.include_router(reminder_router)
     app.include_router(event_router)

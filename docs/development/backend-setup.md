@@ -30,7 +30,7 @@ Local endpoints:
 - Direct API: `http://127.0.0.1:18000/api/v1/health/live` and `/api/v1/health/ready`.
 - PostgreSQL: `127.0.0.1:15432`, reachable only through the explicit local override. The base Compose file has no published ports and an internal DB network. Docker isolated bridges disable published ingress, so the local override also makes that network non-internal; loopback publication still scopes host access.
 
-Only health endpoints exist; auth/profile/reminder requests return JSON 404. Interactive docs and a runtime OpenAPI endpoint are disabled. The generated [OpenAPI artifact](../api/openapi.json) is for contributor/contract review, not a hosted feature. Guest UI does not call the API.
+The default stack exposes health and keeps authentication disabled; private routes return unavailable until explicit account configuration. Implemented auth/profile/account-management routes are documented in [account setup](account-setup.md) and the generated API. Reflections are deferred for launch. Interactive docs and a runtime OpenAPI endpoint are disabled. The generated [OpenAPI artifact](../api/openapi.json) is for contributor/contract review, not a hosted feature. Guest UI does not call the API.
 
 ## What the checks prove
 

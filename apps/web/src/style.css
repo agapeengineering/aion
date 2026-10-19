@@ -1308,3 +1308,61 @@ tbody .selected-unit th {
     grid-template-columns: 1fr;
   }
 }
+
+.account-management section {
+  border-top: 1px solid var(--rule);
+  padding-block: 28px;
+  overflow-wrap: anywhere;
+}
+.account-management h2 {
+  font-family: Georgia, serif;
+  font-size: 28px;
+  font-weight: 400;
+}
+.account-sessions {
+  list-style: none;
+  padding: 0;
+}
+.account-sessions li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding-block: 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.account-sessions p {
+  font-size: 14px;
+  color: var(--muted);
+}
+.account-management .account-confirm {
+  border: 1px solid var(--rule);
+  padding: 24px;
+  margin-block: 24px;
+}
+.danger-text {
+  color: #8a3223;
+}
+.danger-button {
+  background: #8a3223;
+  border-color: #8a3223;
+}
+.account-management .reminder-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-block: 24px;
+}
+.account-management .reminder-check input {
+  width: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  margin-top: 3px;
+}
+@media (max-width: 540px) {
+  .account-sessions li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+}

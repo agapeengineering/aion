@@ -254,3 +254,265 @@ describe('account profile sync', () => {
     expect(b.settings?.lifespanYears).toBe(92);
   });
 });
+
+function deferred<T>() {
+  let resolve!: (value: T) => void, reject!: (error: unknown) => void;
+  const promise = new Promise<T>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+}
+
+describe('account transition coordination', () => {
+  it('blocks queued uploads and foreground refreshes until confirmed termination, preserving guest data', async () => {
+    const s = server(),
+      disk = memory(),
+      entered = deferred<void>(),
+      release = deferred<void>();
+    s.snapshot = { user_id: owner, revision: 1, profile: guest };
+    disk.setItem(STORAGE_KEY, JSON.stringify(guest));
+    let gate = false;
+    const transport: Transport = async <T>(path: string, options?: RequestOptions) => {
+      if (path === '/auth/csrf' && gate) {
+        entered.resolve();
+        await release.promise;
+      }
+      return s.transport<T>(path, options);
+    };
+    const a = new ProfileSync(disk, () => guest, transport);
+    await a.signIn(who);
+    a.chooseAccount();
+    gate = true;
+    a.edit({ ...guest, lifespanYears: 91 });
+    await entered.promise;
+    let actionStarted = false;
+    const ending = a.accountAction(
+      owner,
+      async () => {
+        actionStarted = true;
+      },
+      'revoked',
+    );
+    const before = s.calls.length;
+    await a.refresh();
+    a.setOnline(true);
+    await a.refresh();
+    expect(s.calls.length).toBe(before);
+    expect(actionStarted).toBe(false);
+    release.resolve();
+    await ending;
+    expect(s.calls.some((c) => c.options?.method === 'PUT')).toBe(false);
+    expect(a.getSnapshot().identity).toBeNull();
+    expect(a.getSnapshot().ended).toBe('revoked');
+    expect(disk.getItem(ACCOUNT_MARKER)).toBeNull();
+    expect(disk.getItem(accountKey(owner))).toBeNull();
+    expect(disk.getItem(STORAGE_KEY)).toBe(JSON.stringify(guest));
+  });
+  it('waits for an already-issued upload before deleting and ignores its late callback', async () => {
+    const s = server(),
+      entered = deferred<void>(),
+      release = deferred<void>();
+    s.snapshot = { user_id: owner, revision: 1, profile: guest };
+    const transport: Transport = async <T>(path: string, options?: RequestOptions) => {
+      const result = await s.transport<T>(path, options);
+      if (options?.method === 'PUT') {
+        entered.resolve();
+        await release.promise;
+      }
+      return result;
+    };
+    const a = new ProfileSync(memory(), () => null, transport);
+    await a.signIn(who);
+    a.edit({ ...guest, lifespanYears: 91 });
+    await entered.promise;
+    let started = false;
+    const ending = a.accountAction(
+      owner,
+      async () => {
+        started = true;
+      },
+      'deleted',
+    );
+    await a.refresh();
+    expect(started).toBe(false);
+    release.resolve();
+    await ending;
+    expect(started).toBe(true);
+    expect(a.getSnapshot().phase).toBe('guest');
+    expect(a.getSnapshot().ended).toBe('deleted');
+    expect(a.getSnapshot().snapshot).toBeNull();
+  });
+  it('retains pending edits on an unconfirmed failure and allows a later retry', async () => {
+    const s = server();
+    s.snapshot = { user_id: owner, revision: 1, profile: guest };
+    const a = new ProfileSync(memory(), () => null, s.transport);
+    await a.signIn(who);
+    a.setOnline(false);
+    a.edit({ ...guest, lifespanYears: 92 });
+    const action = a.accountAction(owner, async () => {}, 'deleted');
+    await expect(action).rejects.toThrow();
+    // Reconnect while holding a refresh at its first network await.
+    a.setOnline(true);
+    await expect(
+      a.accountAction(
+        owner,
+        async () => {
+          throw new Error('Unknown outcome');
+        },
+        'deleted',
+      ),
+    ).rejects.toThrow('Unknown outcome');
+    expect(a.getSnapshot().pending?.profile.lifespanYears).toBe(92);
+    expect(a.getSnapshot().identity?.id).toBe(owner);
+    expect(a.getSnapshot().ended).toBeNull();
+    expect(a.getSnapshot().busy).toBe(false);
+    await a.refresh();
+    expect(s.snapshot.profile?.lifespanYears).toBe(92);
+  });
+  it('ignores a stale 401 and fetches a new CSRF nonce after credential rotation before replaying edits', async () => {
+    const s = server(),
+      entered = deferred<void>(),
+      release = deferred<void>();
+    s.snapshot = { user_id: owner, revision: 1, profile: guest };
+    let gate = false,
+      nonce = 'old';
+    const nonces: string[] = [];
+    const transport: Transport = async <T>(path: string, options?: RequestOptions) => {
+      if (path === '/auth/csrf') {
+        const value = nonce;
+        if (gate) {
+          gate = false;
+          entered.resolve();
+          await release.promise;
+          throw new ApiError('unauthenticated', 0, 401);
+        }
+        return { csrf_token: value } as T;
+      }
+      if (options?.method === 'PUT') nonces.push(options.headers!['X-CSRF-Token']);
+      return s.transport<T>(path, options);
+    };
+    const a = new ProfileSync(memory(), () => null, transport);
+    await a.signIn(who);
+    gate = true;
+    a.edit({ ...guest, lifespanYears: 93 });
+    await entered.promise;
+    const verifying = a.accountAction(owner, async () => {
+      nonce = 'new';
+    });
+    await a.refresh();
+    release.resolve();
+    await verifying;
+    await a.refresh();
+    expect(a.getSnapshot().identity?.id).toBe(owner);
+    expect(a.getSnapshot().phase).toBe('saved');
+    expect(nonces).toEqual(['new']);
+  });
+  it('does not clear a newly signed-in account when an older termination response arrives', async () => {
+    const s = server(),
+      entered = deferred<void>(),
+      release = deferred<void>();
+    const disk = memory(),
+      a = new ProfileSync(disk, () => null, s.transport);
+    await a.signIn(who);
+    const ending = a.accountAction(
+      owner,
+      async () => {
+        entered.resolve();
+        await release.promise;
+      },
+      'deleted',
+    );
+    await entered.promise;
+    s.switchAccount();
+    s.snapshot = { user_id: other, revision: 1, profile: guest };
+    await a.signIn({ id: other, email: 'other@example.test' });
+    release.resolve();
+    await expect(ending).rejects.toThrow('account_changed');
+    expect(a.getSnapshot().identity?.id).toBe(other);
+    expect(a.getSnapshot().ended).toBeNull();
+    expect(disk.getItem(accountKey(other))).not.toBeNull();
+  });
+  it('sessionEnded invalidates late refreshes and clears only the account cache', async () => {
+    const s = server(),
+      disk = memory(),
+      entered = deferred<void>(),
+      release = deferred<void>();
+    let gate = false;
+    disk.setItem(STORAGE_KEY, JSON.stringify(guest));
+    const transport: Transport = async <T>(path: string, options?: RequestOptions) => {
+      if (path === '/me' && gate) {
+        entered.resolve();
+        await release.promise;
+      }
+      return s.transport<T>(path, options);
+    };
+    const a = new ProfileSync(disk, () => guest, transport);
+    await a.signIn(who);
+    gate = true;
+    const refreshing = a.refresh();
+    await entered.promise;
+    a.sessionEnded();
+    release.resolve();
+    await refreshing;
+    expect(a.getSnapshot().identity).toBeNull();
+    expect(disk.getItem(accountKey(owner))).toBeNull();
+    expect(disk.getItem(STORAGE_KEY)).toBe(JSON.stringify(guest));
+  });
+});
+
+it('retries a cross-tab CSRF rotation once with the same profile body and operation key', async () => {
+  const s = server();
+  s.snapshot = { user_id: owner, revision: 1, profile: guest };
+  const writes: RequestOptions[] = [];
+  let nonce = 0;
+  const transport: Transport = async <T>(path: string, options?: RequestOptions) => {
+    if (path === '/auth/csrf') return { csrf_token: String(++nonce) } as T;
+    if (options?.method === 'PUT') {
+      writes.push(options);
+      if (writes.length === 1) throw new ApiError('csrf_failed', 0, 403);
+    }
+    return s.transport<T>(path, options);
+  };
+  const a = new ProfileSync(memory(), () => null, transport);
+  await a.signIn(who);
+  a.edit({ ...guest, lifespanYears: 94 });
+  await a.refresh();
+  expect(a.getSnapshot().phase).toBe('saved');
+  expect(writes).toHaveLength(2);
+  expect(writes[0].body).toEqual(writes[1].body);
+  expect(writes[0].headers!['Idempotency-Key']).toBe(writes[1].headers!['Idempotency-Key']);
+  expect(writes.map((w) => w.headers!['X-CSRF-Token'])).toEqual(['1', '2']);
+});
+it('does not loop on repeated CSRF rejection or retry an unrelated forbidden write', async () => {
+  for (const code of ['csrf_failed', 'origin_failed']) {
+    const s = server();
+    s.snapshot = { user_id: owner, revision: 1, profile: guest };
+    let writes = 0;
+    const transport: Transport = async <T>(path: string, options?: RequestOptions) => {
+      if (options?.method === 'PUT') {
+        writes++;
+        throw new ApiError(code, 0, 403);
+      }
+      return s.transport<T>(path, options);
+    };
+    const a = new ProfileSync(memory(), () => null, transport);
+    await a.signIn(who);
+    a.edit({ ...guest, lifespanYears: 95 });
+    await a.refresh();
+    expect(writes).toBe(code === 'csrf_failed' ? 2 : 1);
+    expect(a.getSnapshot().phase).toBe('error');
+    expect(a.getSnapshot().pending).not.toBeNull();
+  }
+});
+
+it('sign-out clears an expired account without treating the completed local cleanup as an outage', async () => {
+  const s = server(),
+    disk = memory();
+  const a = new ProfileSync(disk, () => guest, s.transport);
+  await a.signIn(who);
+  s.expire();
+  await expect(a.signOut()).resolves.toBeUndefined();
+  expect(a.getSnapshot().identity).toBeNull();
+  expect(disk.getItem(ACCOUNT_MARKER)).toBeNull();
+});

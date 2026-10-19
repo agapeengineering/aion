@@ -32,6 +32,33 @@ for (const language of ['en', 'es']) {
 
 for (const language of ['en', 'es']) {
   for (const width of [320, 800]) {
+    test(`account confirmation email (${language}, ${width}px)`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      const external: string[] = [];
+      page.on('request', (request) => {
+        if (/^https?:/.test(request.url())) external.push(request.url());
+      });
+      await page.goto(
+        new URL(`../../.local/email-preview/reverify-${language}.html`, import.meta.url).href,
+      );
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+        language === 'en' ? 'Confirm it’s you.' : 'Confirma que eres tú.',
+      );
+      await expect(page.getByText('00123456', { exact: true })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      expect(
+        (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
+          .violations,
+      ).toEqual([]);
+      expect(external).toEqual([]);
+    });
+  }
+}
+
+for (const language of ['en', 'es']) {
+  for (const width of [320, 800]) {
     test(`reminder email layout (${language}, ${width}px)`, async ({ page }) => {
       await page.setViewportSize({ width, height: 1100 });
       const external: string[] = [];

@@ -24,6 +24,7 @@ export type SyncState = {
     | 'expired';
   busy: boolean;
   cacheIssue: boolean;
+  ended: 'deleted' | 'revoked' | null;
 };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const empty = (): SyncState => ({
@@ -33,6 +34,7 @@ const empty = (): SyncState => ({
   pending: null,
   conflict: null,
   phase: 'guest',
+  ended: null,
   busy: false,
   cacheIssue: false,
 });
@@ -62,6 +64,7 @@ export class ProfileSync {
   private listeners = new Set<() => void>();
   private epoch = 0;
   private flight: Promise<void> | null = null;
+  private accountTransition: object | null = null;
   private online = true;
   private blocked = new Set<string>();
   private diskPending: string | null = null;
@@ -167,13 +170,22 @@ export class ProfileSync {
     }
   }
   private activate(who: Identity) {
+    this.accountTransition = null;
     this.epoch++;
     this.flight = null;
     this.diskPending = null;
     const cached = this.cached(who.id);
-    this.publish({ identity: who, ...cached, conflict: null, phase: 'checking', busy: false });
+    this.publish({
+      identity: who,
+      ...cached,
+      conflict: null,
+      ended: null,
+      phase: 'checking',
+      busy: false,
+    });
   }
-  private forget(phase: 'guest' | 'expired') {
+  private forget(phase: 'guest' | 'expired', ended: SyncState['ended'] = null) {
+    this.accountTransition = null;
     const owner = this.state.identity?.id;
     this.epoch++;
     this.flight = null;
@@ -187,7 +199,7 @@ export class ProfileSync {
       issue = true;
     }
     this.diskPending = null;
-    this.publish({ ...empty(), phase, cacheIssue: issue }, false);
+    this.publish({ ...empty(), phase, ended, cacheIssue: issue }, false);
   }
   async resume() {
     if (this.state.identity) return this.refresh();
@@ -218,6 +230,7 @@ export class ProfileSync {
     if (value && this.state.identity) void this.refresh();
   }
   refresh(): Promise<void> {
+    if (this.accountTransition) return Promise.resolve();
     if (this.flight) return this.flight;
     if (!this.state.identity || !this.online) return Promise.resolve();
     const owner = this.state.identity.id,
@@ -256,19 +269,31 @@ export class ProfileSync {
         this.publish({ pending: { ...pending, sent: true }, phase: 'pending' });
         const csrf = await this.transport<{ csrf_token: string }>('/auth/csrf');
         if (generation !== this.epoch) return;
-        const updated = decodeProfile(
-          await this.transport('/profile', {
+        const send = (nonce: string) =>
+          this.transport('/profile', {
             method: 'PUT',
             body: pending.profile,
             headers: {
               'X-Aion-Account': owner,
-              'X-CSRF-Token': csrf.csrf_token,
+              'X-CSRF-Token': nonce,
               'If-Match': `"profile-${pending.base}"`,
               'Idempotency-Key': pending.operation,
             },
-          }),
-          owner,
-        );
+          });
+        let response: unknown;
+        try {
+          response = await send(csrf.csrf_token);
+        } catch (error) {
+          // Another tab may have rotated the shared session cookie. Retry only
+          // this explicit pre-mutation rejection, once, with the same body/key.
+          if (!(error instanceof ApiError && error.status === 403 && error.code === 'csrf_failed'))
+            throw error;
+          if (generation !== this.epoch) return;
+          const renewed = await this.transport<{ csrf_token: string }>('/auth/csrf');
+          if (generation !== this.epoch) return;
+          response = await send(renewed.csrf_token);
+        }
+        const updated = decodeProfile(response, owner);
         if (generation !== this.epoch) return;
         const newer = this.state.pending;
         if (newer && newer.operation !== pending.operation) {
@@ -407,26 +432,78 @@ export class ProfileSync {
       if (generation === this.epoch) this.publish({ busy: false });
     }
   }
-  async signOut() {
-    if (!this.online) throw new Error('Reconnect to revoke this session');
-    const generation = ++this.epoch;
+  sessionEnded(reason: SyncState['ended'] = null) {
+    this.forget('guest', reason);
+  }
+  async accountAction<T>(
+    owner: string,
+    operation: () => Promise<T>,
+    ending?: 'deleted' | 'revoked' | 'signed-out',
+  ): Promise<T> {
+    if (!this.online || this.state.identity?.id !== owner)
+      throw new ApiError('account_changed', 0, 409);
+    if (this.accountTransition || (this.state.busy && !this.flight))
+      throw new ApiError('account_busy', 0, 409);
+    const previous = this.flight,
+      transition = {},
+      generation = ++this.epoch;
+    this.accountTransition = transition;
     this.flight = null;
-    this.publish({ busy: true });
+    this.publish({ busy: true }, false);
+    const current = () =>
+      this.accountTransition === transition &&
+      this.epoch === generation &&
+      this.state.identity?.id === owner;
     try {
-      const csrf = await this.transport<{ csrf_token: string }>('/auth/csrf');
-      await this.transport('/auth/logout', {
-        method: 'POST',
-        body: {},
-        headers: { 'X-CSRF-Token': csrf.csrf_token },
-      });
-      if (generation === this.epoch) this.forget('guest');
+      // Invalidate stale callbacks, block new refreshes, and let an already-issued
+      // write settle before rotating credentials or ending access. Accepted writes
+      // cannot be recalled; queued writes never start during this transition.
+      await previous;
+      if (!current()) throw new ApiError('account_changed', 0, 409);
+      const result = await operation();
+      if (!current()) throw new ApiError('account_changed', 0, 409);
+      if (ending) this.forget('guest', ending === 'signed-out' ? null : ending);
+      return result;
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) this.forget('expired');
-      else throw error;
+      if (
+        current() &&
+        error instanceof ApiError &&
+        (error.status === 401 || error.code === 'account_changed')
+      )
+        this.forget('expired');
+      throw error;
     } finally {
-      if (generation === this.epoch) this.publish({ busy: false });
+      if (current()) {
+        this.accountTransition = null;
+        this.publish({ busy: false }, false);
+        if (!ending)
+          queueMicrotask(() => {
+            void this.refresh();
+          });
+      }
     }
   }
+  async signOut() {
+    const owner = this.state.identity?.id;
+    if (!owner || !this.online) throw new Error('Online account required');
+    try {
+      await this.accountAction(
+        owner,
+        async () => {
+          const csrf = await this.transport<{ csrf_token: string }>('/auth/csrf');
+          await this.transport('/auth/logout', {
+            method: 'POST',
+            body: {},
+            headers: { 'X-CSRF-Token': csrf.csrf_token },
+          });
+        },
+        'signed-out',
+      );
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 401)) throw error;
+    }
+  }
+
   storageChanged() {
     try {
       const raw = this.storage.getItem(ACCOUNT_MARKER);

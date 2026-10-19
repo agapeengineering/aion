@@ -27,3 +27,11 @@ Guest data remains separate; login alone never uploads it. Sign-out warns before
 ## Verification
 
 `tests/e2e/account-pages.spec.ts` covers direct/protected routes, EN/ES page-preserving language changes, Back/Forward, reload, narrow layout and automated accessibility. Updated authentication tests verify empty-account setup, account persistence after reload and signed-in login redirection. Updated sync tests cover device-only import, separate-browser restoration, a different-guest comparison, concurrent open forms, offline conflicts, reset and guest restoration after sign-out. Capture mail is synthetic and isolated from real Resend configuration. [Local setup](../development/account-setup.md).
+
+## Account management refinement — 2026-10-18
+
+The account page retains the paper/serif design and profile choice panel. Beneath it, an active-session list shows creation/last-active times and a current-session label, without fingerprinting/IP labels. Other sessions can be revoked individually; sign-out everywhere has an explicit confirmation that includes unsynced edits.
+
+A separate data section offers export and deletion. Both open an inline confirmation region, focus its heading, then use a fresh eight-digit email code. Reverification rotates the current credential without changing account identity and lasts ten minutes, including after reload. Export downloads saved server JSON; deletion additionally requires a checked irreversible-action acknowledgment. Confirmed deletion/revoke-all returns to login with a clear status message and preserves the separate guest calendar. Offline and failed actions remain visibly unconfirmed; no destructive offline queue.
+
+Scheduled reflections are deferred. Normal account builds do not render reminder enrollment. The code remains behind an explicit capture-test flag for future resumption. Human walkthrough and actual-device checks remain distinct from browser-engine automation.

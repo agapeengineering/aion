@@ -17,6 +17,7 @@ digraph Aion {
     profiles -> prefs [label="saved profile required"];
     prefs -> delivery [label="eligible scheduled snapshot"];
     suppression -> delivery [label="blocks sending"];
+    deletion [label="DELETION_LEDGER\nOld UUID · keyed email marker · time\nNo FK to active user"];
     users -> profiles [label="one to zero/one"];
     users -> mutations [label="one to many"];
     users -> sessions [label="one to many"];
@@ -27,13 +28,14 @@ digraph Aion {
   subgraph cluster_future {
     label="PLANNED R2 · not implemented · dashed boxes"; color="#b5532a"; style=dashed; margin=22;
     node [style="rounded,dashed,filled", color="#943f1e", fillcolor="#f4ecdf"];
-    deletion [label="DELETION LEDGER\nMinimal deletion marker\nIndependent off-host recovery copy"];
-    deletion -> suppression [style=invis];
+
+    recovery [label="INDEPENDENT RECOVERY\nOff-instance ledger copy\nRestore/reconciliation rehearsal"];
+    deletion -> recovery [label="deployment gate"];
   }
   phrases [label="PHRASE BANKS · versioned JSON\nOriginal EN/ES + approved weekly passages\nNo user FK · fixed weekly publication order", color="#943f1e", penwidth=2];
   browser [label="DEVICE-OWNED\nGuest calendar settings · PNG exports\nNever uploaded by signup alone"];
   users -> prefs [label="opt-in only"];
-  users -> deletion [label="future deletion workflow", style=dashed];
+  users -> deletion [label="confirmed deletion marker; no FK"];
   phrases -> delivery [label="approved weekly content"];
   browser -> profiles [label="explicit import/sync", style=dashed];
 }

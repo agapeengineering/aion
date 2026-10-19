@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session as DbSession
 from aion.config import Settings
 from aion.mail_content import verification_payload
 from aion.models import EmailChallenge, Profile, RateLimitBucket, Session, User, VerificationMail
+from aion.session_revocation import revoke
 
 SESSION_COOKIE = "__Host-aion_session"
 CHALLENGE_COOKIE = "__Host-aion_challenge"
@@ -150,7 +151,9 @@ class AuthService:
         if request.headers.get("origin") != self.origin:
             raise AuthError(403, "origin_failed")
 
-    def request_code(self, value: ChallengeInput, request: Request) -> tuple[uuid.UUID, str]:
+    def request_code(
+        self, value: ChallengeInput, request: Request, *, reverify: bool = False
+    ) -> tuple[uuid.UUID, str]:
         self.check_origin(request)
         try:
             address = validate_email(
@@ -166,18 +169,30 @@ class AuthService:
             raise AuthError(422, "invalid_email") from None
         if self.settings.resend_enabled and email not in self.settings.resend_allowed_recipients:
             raise AuthError(422, "email_not_allowed")
+        purpose = "reverify" if reverify else "login"
         now = self.clock()
         error: AuthError | None = None
         challenge_id, browser = uuid.uuid4(), secrets.token_urlsafe(32)
         ip = request.client.host if request.client else "unknown"
         with DbSession(self.engine) as db, db.begin():
             lock_email(db, email, self.keys)
+            bound_session = None
+            if reverify:
+                identity, _ = self.session_in(db, request, write=True)
+                if identity.email != email:
+                    raise AuthError(409, "account_changed")
+                bound_session = db.scalars(
+                    select(Session).where(
+                        Session.token_digest
+                        == token_digest(request.cookies.get(SESSION_COOKIE, ""))
+                    )
+                ).one()
             if not budget(db, self.keys, "send_ip", ip, 20, now):
                 error = AuthError(429, "rate_limited", 3600)
             else:
                 previous = db.scalars(
                     select(EmailChallenge)
-                    .where(EmailChallenge.email == email, EmailChallenge.purpose == "login")
+                    .where(EmailChallenge.email == email, EmailChallenge.purpose == purpose)
                     .order_by(EmailChallenge.created_at.desc())
                     .limit(1)
                 ).first()
@@ -192,7 +207,7 @@ class AuthService:
                     error = AuthError(429, "rate_limited", 3600)
                 else:
                     old_ids = select(EmailChallenge.id).where(
-                        EmailChallenge.email == email, EmailChallenge.purpose == "login"
+                        EmailChallenge.email == email, EmailChallenge.purpose == purpose
                     )
                     db.execute(
                         update(VerificationMail)
@@ -212,7 +227,7 @@ class AuthService:
                         update(EmailChallenge)
                         .where(
                             EmailChallenge.email == email,
-                            EmailChallenge.purpose == "login",
+                            EmailChallenge.purpose == purpose,
                             EmailChallenge.consumed_at.is_(None),
                             EmailChallenge.invalidated_at.is_(None),
                         )
@@ -224,7 +239,9 @@ class AuthService:
                         EmailChallenge(
                             id=challenge_id,
                             email=email,
-                            purpose="login",
+                            purpose=purpose,
+                            user_id=bound_session.user_id if bound_session else None,
+                            session_id=bound_session.id if bound_session else None,
                             code_digest=self.keys.digest("code", f"{challenge_id}:{code}"),
                             browser_digest=token_digest(browser),
                             attempts=0,
@@ -237,6 +254,7 @@ class AuthService:
                         "email": email,
                         "code": code,
                         "language": value.language,
+                        "purpose": purpose,
                     }
                     if self.settings.resend_enabled:
                         content["resend"] = verification_payload(
@@ -245,6 +263,7 @@ class AuthService:
                             value.language,
                             self.settings.email_from,
                             self.settings.email_reply_to,
+                            purpose=purpose,
                         )
                     payload = json.dumps(content)
                     db.add(
@@ -262,24 +281,50 @@ class AuthService:
             raise error
         return challenge_id, browser
 
-    def verify(self, value: VerifyInput, request: Request) -> tuple[Identity, str]:
+    def verify(
+        self, value: VerifyInput, request: Request, *, reverify: bool = False
+    ) -> tuple[Identity, str]:
         self.check_origin(request)
         now = self.clock()
         error: AuthError | None = AuthError(400, "verification_failed")
         identity: Identity | None = None
-        token = secrets.token_urlsafe(32)
+        token = request.cookies.get(SESSION_COOKIE, "") if reverify else secrets.token_urlsafe(32)
         ip = request.client.host if request.client else "unknown"
         browser = request.cookies.get(CHALLENGE_COOKIE, "")
         with DbSession(self.engine) as db, db.begin():
+            bound_session = None
+            if reverify:
+                self.session_in(db, request, write=True)
+                bound_session = db.scalars(
+                    select(Session).where(Session.token_digest == token_digest(token))
+                ).one()
             if not budget(db, self.keys, "verify_ip", ip, 100, now):
                 error = AuthError(429, "rate_limited", 3600)
             else:
                 challenge = db.get(EmailChallenge, value.challenge_id)
+                if (
+                    reverify
+                    and challenge is not None
+                    and (
+                        bound_session is None
+                        or challenge.session_id != bound_session.id
+                        or challenge.user_id != bound_session.user_id
+                    )
+                ):
+                    challenge = None
                 if challenge is not None:
                     lock_email(db, challenge.email, self.keys)
                     db.refresh(challenge)
                     valid = (
-                        challenge.purpose == "login"
+                        challenge.purpose == ("reverify" if reverify else "login")
+                        and (
+                            not reverify
+                            or (
+                                bound_session is not None
+                                and challenge.session_id == bound_session.id
+                                and challenge.user_id == bound_session.user_id
+                            )
+                        )
                         and challenge.consumed_at is None
                         and challenge.invalidated_at is None
                         and challenge.expires_at > now
@@ -296,7 +341,7 @@ class AuthService:
                                 user = db.scalars(
                                     select(User).where(User.email == challenge.email)
                                 ).first()
-                                if user is None:
+                                if user is None and not reverify:
                                     user = User(
                                         email=challenge.email, created_at=now, verified_at=now
                                     )
@@ -317,24 +362,37 @@ class AuthService:
                                         encrypted_payload=None,
                                     )
                                 )
-                                previous = request.cookies.get(SESSION_COOKIE)
-                                if previous:
-                                    db.execute(
-                                        update(Session)
-                                        .where(Session.token_digest == token_digest(previous))
-                                        .values(revoked_at=now)
+                                assert user is not None
+                                if reverify:
+                                    assert bound_session is not None
+                                    bound_session.reverified_at = now
+                                    token = secrets.token_urlsafe(32)
+                                    bound_session.token_digest = token_digest(token)
+                                    bound_session.csrf_digest = token_digest(
+                                        self.keys.csrf_token(token)
                                     )
-                                db.add(
-                                    Session(
-                                        user_id=user.id,
-                                        token_digest=token_digest(token),
-                                        csrf_digest=token_digest(self.keys.csrf_token(token)),
-                                        created_at=now,
-                                        last_seen_at=now,
-                                        expires_at=now + timedelta(days=7),
-                                        absolute_expires_at=now + timedelta(days=30),
+                                else:
+                                    previous = request.cookies.get(SESSION_COOKIE)
+                                    if previous:
+                                        db.execute(
+                                            update(Session)
+                                            .where(
+                                                Session.token_digest == token_digest(previous),
+                                                Session.revoked_at.is_(None),
+                                            )
+                                            .values(revoked_at=now)
+                                        )
+                                    db.add(
+                                        Session(
+                                            user_id=user.id,
+                                            token_digest=token_digest(token),
+                                            csrf_digest=token_digest(self.keys.csrf_token(token)),
+                                            created_at=now,
+                                            last_seen_at=now,
+                                            expires_at=now + timedelta(days=7),
+                                            absolute_expires_at=now + timedelta(days=30),
+                                        )
                                     )
-                                )
                                 identity, error = Identity(id=user.id, email=user.email), None
         if error:
             raise error
@@ -350,7 +408,7 @@ class AuthService:
     ) -> tuple[Identity, str]:
         token = request.cookies.get(SESSION_COOKIE, "")
         now = self.clock()
-        if write:
+        if write or logout:
             address = db.scalar(
                 select(User.email)
                 .join(Session, Session.user_id == User.id)
@@ -374,7 +432,7 @@ class AuthService:
             if not hmac.compare_digest(session.csrf_digest, token_digest(nonce)):
                 raise AuthError(403, "csrf_failed")
         if logout:
-            session.revoked_at = now
+            revoke(db, [session.id], now)
         else:
             session.last_seen_at = now
             session.expires_at = min(now + timedelta(days=7), session.absolute_expires_at)
@@ -437,5 +495,6 @@ def csrf_endpoint(request: Request) -> CsrfResult:
 def logout_endpoint(request: Request) -> Response:
     service(request).session(request, logout=True)
     response = Response(status_code=204)
-    response.delete_cookie(SESSION_COOKIE, path="/", secure=True, httponly=True, samesite="lax")
+    for name in (SESSION_COOKIE, CHALLENGE_COOKIE):
+        response.delete_cookie(name, path="/", secure=True, httponly=True, samesite="lax")
     return response

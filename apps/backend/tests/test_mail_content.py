@@ -97,3 +97,21 @@ def test_smtp_capture_sends_plain_text_and_html_alternatives(monkeypatch, langua
         == verification_html(CODE, language, "support@example.test").strip()
     )
     assert mail["Reply-To"] == "support@example.test"
+
+
+@pytest.mark.parametrize("language", ["en", "es"])
+def test_account_confirmation_wording_is_purpose_specific_in_both_formats(language):
+    from aion.mail_content import wording
+
+    payload = verification_payload(
+        "person@example.test", CODE, language, "Aion", "support@example.test", "reverify"
+    )
+    copy = wording(CODE, language, "reverify")
+    assert copy["subject"] == payload["subject"]
+    assert copy["heading"] in payload["text"] and copy["heading"] in payload["html"]
+    assert copy["intro"] in payload["text"] and copy["intro"] in payload["html"]
+    assert payload["html"].count(CODE) == 1 and payload["text"].count(CODE) == 1
+    assert CODE not in payload["subject"]
+    assert payload["subject"] != wording(CODE, language)["subject"]
+    with pytest.raises(ValueError):
+        wording(CODE, language, "unsupported")

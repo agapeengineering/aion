@@ -1,0 +1,33 @@
+# Account management
+
+Implemented locally; [verification evidence](../testing/account-management.md). Public release remains gated on infrastructure and independent recovery. All routes use `/api/v1`, HttpOnly session cookies, `Cache-Control: no-store` and expected `X-Aion-Account` owner UUID. No guest calendar API traffic. [OpenAPI](openapi.json) owns exact request schemas; [authentication](authentication-contract.md) owns shared code/session/budget rules.
+
+| Route | Contract |
+| --- | --- |
+| `POST /auth/reverify/challenges` | CSRF + exact Origin + current session/owner. Body `{ "language": "en" }` (or `es`), no email field. Issue a separately purposed ten-minute browser/session/user-bound challenge using the existing sealed mail queue and shared send/guess budgets. |
+| `POST /auth/reverify` | Same write checks; body `{ "challenge_id": "UUID", "code": "eight digits" }`. Consume once, only for its issuing session. Rotate that session's opaque credential and CSRF nonce, preserve its absolute expiry, record verification time and return `reverified_until` plus the remaining `reverified_for` seconds. Does not create an account or log in another session. |
+| `GET /sessions` | List only this owner's active sessions with record ID, created/last-active/expiry times and current flag, plus the current session’s verification expiry and relative remaining seconds so a reload does not require an unnecessary new code. Never expose token/CSRF digests, IPs or device fingerprints. |
+| `DELETE /sessions/{id}` | CSRF + Origin. Revoke only an owned session; missing and foreign IDs both return 404. Revoking current also clears cookies. |
+| `DELETE /sessions` | CSRF + Origin. Revoke all owned sessions **including current**, clear cookies. UI confirms loss of unsynced local account edits. |
+| `GET /account/export` | Fresh email reverification strictly within ten minutes. Versioned JSON attachment whitelists account identity/times, current calendar and reminder/consent preferences; excludes credentials, codes, unsubscribe capabilities and mail payloads. Exports saved server state, not unsynced device edits. |
+| `DELETE /account` | CSRF + Origin + fresh reverification + exact body `{ "confirmation": "delete" }`. UI also requires a checked permanent-deletion acknowledgment. Transactionally stop reminders, cancel pending jobs, record an independent minimal deletion marker, remove all challenges for this canonical email (including unowned pending login), delete user and cascading owned data, then clear cookies. |
+
+Sensitive actions require a **new** confirmation code even after ordinary login. Both purposes share address/IP budgets; failed attempts persist. A reverify code cannot be used on `/auth/verify` and a login code cannot grant sensitive-action authorization. Revoked/expired sessions cannot verify. Logout and single/all-session revocation use the per-email delivery barrier, invalidate pending session-bound challenges and purge their sealed queued payloads in the same transaction; logout clears both session and challenge cookies. Repeated revocation preserves its original timestamp and retention deadline. [OWASP authentication guidance](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html) informs the fresh-verification and credential-rotation boundary.
+
+Deletion shares the per-email dispatch barrier with both verification and reminder delivery. No new dispatch begins after deletion commits; already accepted/delivered mail cannot be recalled. SQL cascades remove sessions, bound challenges, profiles, mutations and reminders. Unbound login challenges are explicitly removed by canonical email so an older code cannot recreate the account. Independent keyed suppression and deletion markers retain no birth date, phrase payload or plaintext email. A later deliberate signup receives a new UUID and empty profile.
+
+The web page preserves its separate guest calendar, clears its account cache and invalidates pending in-flight responses when current access ends. Other devices clear cached account data at their next successful auth check; an offline device cannot be erased remotely. A failed/unknown deletion response must not be displayed as confirmed success; refreshing resolves identity state. Export creates a local JSON file under the user's control.
+
+## Editable settings and deferred scope
+
+`GET/PUT/DELETE /profile` already manage birth date, chosen lifespan, language, primary unit and hide-remaining preference with revision checks. No redundant account-details endpoint is added. Email address is the verified identity and cannot be edited in this release. Passwords, display names, social login and account merging are outside scope. Scheduled reflections are deferred; retained reminder settings may appear in an export but default launch UI does not enroll users.
+
+## Recovery boundary
+
+Migration `0006_account_lifecycle` adds the session binding and `deletion_ledger`: old account UUID, keyed email marker and deletion timestamp, with **no user FK**. This local table alone is not independent recovery. Before public launch, copy deletion/suppression markers to protected off-instance storage and rehearse restoring backups with sends/traffic disabled, reconciling deleted UUIDs, preserving suppression, invalidating restored sessions/challenges/jobs, and only then admitting traffic. A restored ledger on the same host is insufficient. These operational procedures remain in the deployment/recovery slice; do not claim a local deletion test proves backup-erasure or production restore readiness.
+
+## Coordinated browser transitions
+
+The sync controller pauses new foreground/timer refreshes before logout, revoke-all, deletion or reverification. It invalidates stale callbacks and waits for already-issued sync work before sending the account action. Requests already accepted by the server cannot be recalled; queued local edits do not begin uploading during the transition. Successful termination publishes its completion reason with the cache clear, independently of account-panel lifetime. Failed/unconfirmed termination preserves local pending edits, and an old result cannot clear a newly signed-in identity.
+
+Reverification keeps credential/CSRF rotation. Background writes resume afterward with a fresh nonce. If another tab rotates the shared cookie, profile sync retries only an explicit `csrf_failed` pre-mutation rejection, once, using the same profile body, revision and idempotency key; other forbidden writes are not retried. The UI anchors `reverified_for` to a monotonic clock rather than comparing server dates with device wall time. The server remains the authority on expiry; invalid/absent remaining lifetimes never unlock an action.

@@ -85,6 +85,11 @@ class EmailChallenge(Base):
             "OR (purpose = 'reverify' AND user_id IS NOT NULL)",
             name="purpose_owner",
         ),
+        CheckConstraint(
+            "(purpose = 'login' AND session_id IS NULL) OR "
+            "(purpose = 'reverify' AND session_id IS NOT NULL)",
+            name="purpose_session",
+        ),
         Index(
             "uq_email_challenges_active",
             "email",
@@ -99,6 +104,9 @@ class EmailChallenge(Base):
     email: Mapped[str] = mapped_column(String(254))
     purpose: Mapped[str] = mapped_column(String(16))
     user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    session_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sessions.id", ondelete="CASCADE")
+    )
     code_digest: Mapped[bytes] = mapped_column(LargeBinary)
     browser_digest: Mapped[bytes] = mapped_column(LargeBinary)
     attempts: Mapped[int] = mapped_column(server_default="0")
@@ -269,3 +277,11 @@ class EmailEvent(Base):
     provider_message_id: Mapped[str] = mapped_column(String(64), index=True)
     kind: Mapped[str] = mapped_column(String(32))
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class DeletionLedger(Base):
+    __tablename__ = "deletion_ledger"
+    # No user foreign key: survives deletion and supports safe backup reconciliation.
+    user_id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    email_digest: Mapped[bytes] = mapped_column(LargeBinary)
+    deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

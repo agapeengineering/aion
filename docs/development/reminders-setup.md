@@ -1,5 +1,7 @@
 # Local email reminders
 
+**Deferred for a later release (2026-10-18).** Preserve this infrastructure while passages are curated. Account/sync launch hides reminder enrollment and keeps scheduled sending off; transactional login/confirmation mail remains independent.
+
 Status: implemented and tested locally; no public reminder service is deployed. Account export/deletion, public infrastructure and release gates remain separate work. See the [local verification record](../testing/email-reminders.md), [reminder contract](../api/reminder-contract.md) and [phrase strategy](../content/phrase-bank.md).
 
 ## Capture-only preview
@@ -7,7 +9,7 @@ Status: implemented and tested locally; no public reminder service is deployed. 
 Generate local database/auth configuration as described in [account setup](account-setup.md), then build the account UI and layer the reminder override:
 
 ```sh
-VITE_AION_AUTH=1 VITE_AION_AUTH_LOCAL=1 pnpm build
+VITE_AION_AUTH=1 VITE_AION_AUTH_LOCAL=1 VITE_AION_REMINDERS=1 pnpm build
 docker compose -f deploy/compose.yaml -f deploy/compose.local.yaml -f deploy/compose.auth.local.yaml -f deploy/compose.reminders.local.yaml up -d --build --wait
 ```
 

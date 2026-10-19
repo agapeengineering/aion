@@ -6,6 +6,8 @@ import type { ProfileSync, SyncState } from './profile-sync';
 import type { Settings } from './storage';
 import { ProfilePanel, syncWords } from './ProfilePanel';
 import { ReminderPanel } from './ReminderPanel';
+import { AccountManagement } from './AccountManagement';
+const remindersEnabled = import.meta.env.VITE_AION_REMINDERS === '1';
 
 export const accountsEnabled = import.meta.env.VITE_AION_AUTH === '1';
 const words = {
@@ -78,10 +80,12 @@ export function Account({
   navigate: (page: Page, replace?: boolean) => void;
 }) {
   const c = words[language];
+  const ended = state.ended;
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [challenge, setChallenge] = useState<string | null>(null);
   const identity = state.identity;
+
   const [confirmOut, setConfirmOut] = useState(false);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
@@ -180,6 +184,17 @@ export function Account({
   }
   return (
     <div className="account-copy">
+      {!identity && ended && (
+        <p role="status">
+          {ended === 'deleted'
+            ? language === 'en'
+              ? 'Your account has been deleted. Your separate guest calendar is preserved.'
+              : 'Tu cuenta se ha eliminado. Tu calendario local separado se conserva.'
+            : language === 'en'
+              ? 'You have signed out of every session.'
+              : 'Se ha cerrado la sesión en todos los dispositivos.'}
+        </p>
+      )}
       {!identity && (
         <p className="account-intro">
           {language === 'en'
@@ -204,12 +219,21 @@ export function Account({
             language={language}
             done={done}
           />
-          <ReminderPanel
-            key={identity.id}
+          {remindersEnabled && (
+            <ReminderPanel
+              key={identity.id}
+              owner={identity.id}
+              language={language}
+              hasProfile={Boolean(state.snapshot?.profile)}
+              checkAccount={controller.refresh.bind(controller)}
+            />
+          )}
+          <AccountManagement
+            key={`management-${identity.id}`}
             owner={identity.id}
             language={language}
-            hasProfile={Boolean(state.snapshot?.profile)}
-            checkAccount={controller.refresh.bind(controller)}
+            controller={controller}
+            pending={Boolean(state.pending)}
           />
           {confirmOut ? (
             <>

@@ -1,6 +1,6 @@
 # Controlled Resend delivery from the local backend
 
-The verification worker supports Resend HTTPS delivery. Routine development/CI still uses Mailpit and synthetic mail. Real sending is opt-in and limited to an explicit recipient allowlist. Reminder preferences, scheduling and verified suppression webhooks are implemented locally. Real reminders stay off until a reachable webhook and its signing secret are configured; see [reminder setup](reminders-setup.md). Public accounts and the complete R2 account lifecycle/recovery gates remain pending. This setup changes no DNS, provider account, billing or public deployment.
+The verification worker supports Resend HTTPS delivery. Routine development/CI still uses Mailpit and synthetic mail. Real sending is opt-in and limited to an explicit recipient allowlist. Reminder preferences, scheduling and verified suppression webhooks are implemented locally. Real reminders stay off until a reachable webhook and its signing secret are configured; see [reminder setup](reminders-setup.md). Account lifecycle is implemented locally; public accounts and independent recovery gates remain pending. This setup changes no DNS, provider account, billing or public deployment.
 
 ## Configuration
 
@@ -11,6 +11,7 @@ The verification worker supports Resend HTTPS delivery. Routine development/CI s
 | `AION_EMAIL_FROM=Aion <aion@mail.agape.engineering>` | API + worker | Sender; frozen into each sealed queued request |
 | `AION_EMAIL_REPLY_TO` | API + worker | A working monitored email address; required |
 | `AION_RESEND_ALLOWED_RECIPIENTS` | API + worker | JSON array of exact test recipient addresses; nonempty, normalized; no wildcards |
+| `AION_RESEND_WEBHOOK_SECRET_FILE` | API (+ worker when configured) | Private signing-secret mount for verified delivery/bounce/complaint callbacks; configure and verify reachability before public accounts |
 | `AION_LOCAL_MAIL_CAPTURE=false` | API + worker | Prevent simultaneous local SMTP and Resend modes |
 
 No raw API-key environment variable is supported. Never use a frontend `VITE_*` variable for credentials, paste keys in chat or commit them. The API does not mount the key. The provider's domain open/click tracking must remain disabled. Sender verification is a Resend/DNS prerequisite; configuring a string here does not verify a domain. A Reply-To must already receive mail; this setup does not create a mailbox.
@@ -78,3 +79,6 @@ The operator subsequently confirmed receiving the test email and confirmed that 
 
 
 The [verification email design](../design/verification-email.md) documents the EN/ES HTML and plain-text template, synthetic preview command and rendering evidence. Body branding is implemented in the application, separately from recipient-provider inbox avatars/BIMI.
+
+
+Account confirmation uses the same sealed queue, sender, support Reply-To, recipient allowlist, budgets and idempotent provider adapter as login, with a distinct EN/ES purpose/template. No extra provider account/key is needed. Reflections remain deferred. Before **public account login** (independently of reminders), configure a reachable signature-verified webhook and verify suppression on bounce/complaint; API/worker configuration and provider callback reachability must be reviewed together. Local allowlisted sign-in success alone does not prove that production lifecycle.

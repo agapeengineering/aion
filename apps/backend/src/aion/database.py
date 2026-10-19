@@ -4,7 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from aion.config import Settings
 
-SCHEMA_REVISION = "0005_reminders"
+SCHEMA_REVISION = "0006_account_lifecycle"
 
 
 def make_engine(settings: Settings) -> Engine:

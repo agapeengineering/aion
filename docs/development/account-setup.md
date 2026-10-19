@@ -34,3 +34,11 @@ AION_AUTH_TESTS=1 AION_BASE_URL=https://127.0.0.1:18443 pnpm exec playwright tes
 Browser tests use unique synthetic recipients and poll the local capture API. Authentication tests disable screenshots/traces/videos to avoid recording codes or cookies. The default web regression build remains `pnpm check` followed by `pnpm test:e2e`. See [authentication contract](../api/authentication-contract.md), [database diagram](../architecture/database.md) and [verification record](../testing/email-code-auth.md).
 
 For controlled real delivery, see [Resend setup](resend-setup.md). Remaining work includes live provider verification/webhooks/suppression, trusted proxy client IPs, restricted runtime DB grants, re-verification/session management, export/deletion, reminders, recovery and R2 release gates. A local sign-in is not the complete account release.
+
+## Account management and deferred reflections
+
+The local account page now includes active sessions, sign-out everywhere, fresh email confirmation, JSON export and permanent account deletion. [Account management contract](../api/account-management-contract.md) describes ownership, confirmation and retention. Calendar inputs/preferences remain editable from the calendar screen. Email address changes are not supported.
+
+Default account builds hide reminder controls while the phrase collection is curated. Keep `AION_REMINDERS_ENABLED=false`; login and confirmation emails continue through the verification outbox. Only capture-specific reminder checks deliberately use `VITE_AION_REMINDERS=1` and the reminder Compose override. Removing the frontend flag alone does not stop an already enabled worker; both deployment settings must be reviewed.
+
+No real account deletion or provider email is needed to test: use a disposable capture-only stack and synthetic `@example.test` addresses. Run `tests/e2e/account-management.spec.ts` with `AION_AUTH_TESTS=1` and the capture inbox/base URLs. Multi-engine full account suites exceed the normal hourly IP send budget if run together; reset **only the disposable synthetic project** between engines, or run against independent disposable stacks. Do not disable production abuse controls to run browser tests.

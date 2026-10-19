@@ -1,10 +1,14 @@
 # Phrase content and weekly publication
 
+**Deferred for a later release (2026-10-18).** Preserve this infrastructure while passages are curated. Account/sync launch hides reminder enrollment and keeps scheduled sending off; transactional login/confirmation mail remains independent.
+
 Aion keeps editorial content in versioned JSON, reviewed with the code. PostgreSQL stores consent, schedules and delivery metadata; it does not duplicate the phrase catalogue. No admin service or CSV parser is needed.
 
 - `apps/backend/src/aion/content/original-phrases.json`: the eight original EN/ES calendar phrases, shared with the web app. These are separate from the attributed weekly collection.
 - `apps/backend/src/aion/content/weekly-phrases.json`: approved attributed passages and their publication order. Currently empty, pending editorial validation. No research drafts have been imported.
 - [JSON schema](weekly-phrases.schema.json): generated from the Python validator; backend CI checks for drift.
+
+Before resuming after deferral, reconfirm the publication start date; the current anchor is an implementation/test baseline, not a promise of retrospective emails.
 
 ## Global order
 

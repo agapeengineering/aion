@@ -1,5 +1,7 @@
 # Reminder API and dispatch contract
 
+**Deferred for a later release (2026-10-18).** Preserve this infrastructure while passages are curated. Account/sync launch hides reminder enrollment and keeps scheduled sending off; transactional login/confirmation mail remains independent.
+
 Implemented locally under `/api/v1`. See [generated OpenAPI](openapi.json) for exact schemas. All API responses are non-cacheable. Guest calendar use does not call this API.
 
 | Route | Behavior |
