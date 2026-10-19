@@ -12,6 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from aion.auth import AuthService, utc_now
 from aion.config import Settings
 from aion.database import is_ready, make_engine
+from aion.reminder_delivery import deliver_reminders, schedule_due
 from aion.resend_mail import ResendSender
 from aion.verification_mail import LocalCapture, Sender, cleanup_expired, deliver_pending
 
@@ -56,6 +57,8 @@ def main() -> int:
                     cleanup_expired(engine, utc_now())
                     if auth is not None and sender is not None:
                         deliver_pending(engine, auth.keys, sender, utc_now())
+                        schedule_due(auth, utc_now())
+                        deliver_reminders(auth, sender, utc_now())
                 except SQLAlchemyError:
                     available = False
             if available:

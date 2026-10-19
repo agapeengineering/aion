@@ -5,6 +5,7 @@ import { api, ApiError } from './api';
 import type { ProfileSync, SyncState } from './profile-sync';
 import type { Settings } from './storage';
 import { ProfilePanel, syncWords } from './ProfilePanel';
+import { ReminderPanel } from './ReminderPanel';
 
 export const accountsEnabled = import.meta.env.VITE_AION_AUTH === '1';
 const words = {
@@ -202,6 +203,13 @@ export function Account({
             guest={guest}
             language={language}
             done={done}
+          />
+          <ReminderPanel
+            key={identity.id}
+            owner={identity.id}
+            language={language}
+            hasProfile={Boolean(state.snapshot?.profile)}
+            checkAccount={controller.refresh.bind(controller)}
           />
           {confirmOut ? (
             <>

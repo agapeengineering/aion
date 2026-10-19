@@ -16,8 +16,17 @@ from sqlalchemy import Connection, Engine, case, delete, select, text, update
 from sqlalchemy.orm import Session as DbSession
 
 from aion.auth import AuthKeys
-from aion.mail_content import verification_content
-from aion.models import EmailChallenge, ProfileMutation, RateLimitBucket, Session, VerificationMail
+from aion.mail_content import verification_content, verification_html
+from aion.models import (
+    EmailChallenge,
+    EmailEvent,
+    EmailSuppression,
+    ProfileMutation,
+    RateLimitBucket,
+    ReminderMail,
+    Session,
+    VerificationMail,
+)
 
 
 @dataclass(repr=False)
@@ -39,9 +48,23 @@ class LocalCapture:
         mail = EmailMessage()
         mail["From"], mail["To"] = "Aion <aion@example.test>", message.email
         mail["Message-ID"] = f"<{key}@aion.example.test>"
-        subject, body = verification_content(message.code, message.language)
+        payload = message.provider_payload
+        if payload:
+            subject, body = str(payload["subject"]), str(payload["text"])
+            html = str(payload["html"])
+        else:
+            subject, body = verification_content(
+                message.code, message.language, "support@example.test"
+            )
+            html = verification_html(message.code, message.language, "support@example.test")
         mail["Subject"] = subject
+        mail["Reply-To"] = "support@example.test"
         mail.set_content(body)
+        mail.add_alternative(html, subtype="html")
+        headers = payload.get("headers") if payload else None
+        if isinstance(headers, dict):
+            for header, value in headers.items():
+                mail[header] = value
         with smtplib.SMTP("mailpit", 1025, timeout=3) as smtp:
             smtp.send_message(mail)
 
@@ -116,7 +139,8 @@ def deliver_pending(engine: Engine, keys: AuthKeys, sender: Sender, now: datetim
                     continue
                 challenge = db.get(EmailChallenge, job.challenge_id)
                 if (
-                    challenge is None
+                    db.get(EmailSuppression, keys.digest("suppression", email)) is not None
+                    or challenge is None
                     or challenge.consumed_at is not None
                     or challenge.invalidated_at is not None
                     or challenge.expires_at <= dispatch_now
@@ -200,4 +224,15 @@ def cleanup_expired(engine: Engine, now: datetime) -> None:
         db.execute(
             delete(ProfileMutation).where(ProfileMutation.created_at <= now - timedelta(days=30))
         )
+        db.execute(
+            update(ReminderMail)
+            .where(ReminderMail.expires_at <= now, ReminderMail.encrypted_payload.is_not(None))
+            .values(
+                status=case((ReminderMail.acceptance_unknown, "uncertain"), else_="expired"),
+                encrypted_payload=None,
+                lease_until=None,
+            )
+        )
+        db.execute(delete(ReminderMail).where(ReminderMail.expires_at <= now - timedelta(days=30)))
+        db.execute(delete(EmailEvent).where(EmailEvent.received_at <= now - timedelta(days=30)))
         db.execute(delete(RateLimitBucket).where(RateLimitBucket.expires_at <= now))

@@ -1,6 +1,6 @@
 # Aion data model
 
-Status: implementation map, not a claim of a deployed account service. The public R1 site still stores calendar settings only in each browser. The local backend foundation has four application tables under migration `0001_identity`; the signup/login slice adds `verification_mail` in `0002_verification`. Migration `0003_mail_result` adds provider acceptance ID/uncertainty metadata. Migration `0004_profiles` adds `profiles` and `profile_mutations`. `alembic_version` tracks schema revision separately. The accepted [R2 specification](../requirements/backend-release-specification.md) defines the planned additions.
+Status: implementation map, not a claim of a deployed account service. The public R1 site still stores calendar settings only in each browser. The local backend foundation has four application tables under migration `0001_identity`; the signup/login slice adds `verification_mail` in `0002_verification`. Migration `0003_mail_result` adds provider acceptance ID/uncertainty metadata. Migration `0004_profiles` adds `profiles` and `profile_mutations`. Migration `0005_reminders` adds consent/schedules, reminder delivery jobs, minimal events and independent suppression. `alembic_version` tracks schema revision separately. The accepted [R2 specification](../requirements/backend-release-specification.md) defines the planned additions.
 
 ![Implemented and planned Aion data](database.svg)
 
@@ -20,71 +20,14 @@ A first-login challenge has **no user foreign key**: an account is created only 
 
 See the [implemented sync API and browser behavior](../api/profile-contract.md).
 
-## Planned reminder data
+## Implemented reminder data
 
-These entities are **not implemented yet**. The planned general outbox may extend or replace the auth-specific `verification_mail` table; it is not a second currently deployed queue. Names below are logical design labels; subsequent reviewed migrations own exact fields/constraints.
+Migration `0005_reminders` adds `reminder_preferences` (optional owner row, explicit consent and revisioned local schedule), `reminder_mail` (owner/date uniqueness, expiring leases, sealed temporary snapshots and selected phrase metadata), `email_events` (minimal deduplicated provider events), and `email_suppressions` (keyed identifiers independent of active users). The verification outbox remains separate. See the [dispatch contract](../api/reminder-contract.md) and generated schema for actual fields and constraints.
 
-```mermaid
-erDiagram
-    USERS ||--o| REMINDER_PREFERENCES : "explicit opt-in"
-    EMAIL_CHALLENGES ||--o| EMAIL_OUTBOX : "verification delivery before signup"
-    USERS o|--o{ EMAIL_OUTBOX : "future reminder delivery"
-    EMAIL_OUTBOX ||--o{ EMAIL_EVENTS : "provider metadata"
-    REMINDER_PREFERENCES {
-        uuid user_id PK,FK
-        bool enabled "default false"
-        string frequency "daily or weekly"
-        string timezone "IANA"
-        string local_send_time
-        int weekday
-        string language
-        bool include_phrase
-        datetime consent_at
-        string notice_version
-        datetime next_due_at
-        int revision
-    }
-    EMAIL_OUTBOX {
-        uuid id PK
-        uuid challenge_id FK "verification jobs"
-        uuid user_id FK "future reminder jobs"
-        bytes encrypted_payload "temporary, no plaintext codes"
-        string logical_send_key UK
-        string status
-        int attempts
-        datetime expires_at
-    }
-    EMAIL_EVENTS {
-        string provider_event_id PK
-        uuid outbox_id FK
-        string event_type
-        datetime received_at
-    }
-    EMAIL_SUPPRESSIONS {
-        bytes email_identifier PK "keyed; retained independently of user"
-        string reason
-        datetime created_at
-    }
-    DELETION_LEDGER {
-        uuid deleted_account_id PK
-        bytes email_identifier "minimal keyed marker"
-        datetime deleted_at
-    }
-```
-
-Profiles contain the inputs/preferences, **not** a running counter or a row per lived week. Clients/backend derive totals using the same calendar contract. Reminder settings require a saved profile before activation; opt-in is distinct from verifying an email. Suppression/deletion markers are independent of live user records so account deletion and backup restoration cannot accidentally re-enable sending. The deletion ledger also needs an independently retained off-instance copy; another table on the same host is insufficient recovery evidence.
+Profile reset stops enrollment. Preference/profile changes cancel obsolete queued payloads. Suppression persists independently of a deleted user, but the complete account-deletion workflow and independently retained deletion ledger are **not implemented**. Backup reconciliation remains a release gate.
 
 ## Phrase bank and other data outside PostgreSQL
 
-The original EN/ES phrase bank is currently the `phrases` array in `apps/web/src/i18n.ts`. It is source-controlled product content, with no per-user ownership and no database table. Before implementing reminders, move it to one versioned shared content file consumed by both web and Python. No phrase CRUD/admin service or database copy is required for R2. Delivery metadata may record the chosen phrase ID/content version without retaining complete private email bodies.
-
-```mermaid
-flowchart LR
-    Content["Original EN/ES phrases — versioned source"] --> Web["Web calendar"]
-    Content -. "planned shared content extraction" .-> Worker["Reminder worker"]
-    Browser["Guest browser settings"] --> Web
-    Web -- "explicit account import / sync" --> Profile["PostgreSQL profile inputs"]
-    Profile -. "future scheduled snapshot" .-> Worker
-```
+The original EN/ES calendar bank and approved attributed weekly bank are versioned JSON in `apps/backend/src/aion/content/`. The original bank is shared with the web app; the weekly bank is consumed by the reminder worker and starts empty pending editorial approval. It has no per-user rows or CRUD service. Global publication order starts October 18, 2026; metadata records the selected ID/content version. See the [phrase content strategy](../content/phrase-bank.md).
 
 Guest settings and downloaded PNGs remain device-owned. Session credentials stay in HttpOnly cookies; only digests belong in PostgreSQL. Application encryption/HMAC keys belong in secret configuration, never in the same tables, source files, diagrams or logs. The server reads account settings to send reminders; this is not end-to-end encryption. See the [authentication contract](../api/authentication-contract.md) and [backend setup](../development/backend-setup.md) for implementation boundaries.

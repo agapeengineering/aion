@@ -13,7 +13,9 @@ from starlette.responses import Response
 from aion.auth import AuthError, AuthService, router
 from aion.config import Settings
 from aion.database import is_ready, make_engine
+from aion.mail_events import router as event_router
 from aion.profiles import router as profile_router
+from aion.reminders import router as reminder_router
 
 
 class Health(BaseModel):
@@ -78,6 +80,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(router)
     app.include_router(profile_router)
+    app.include_router(reminder_router)
+    app.include_router(event_router)
 
     @app.get("/api/v1/health/live", response_model=Health)
     def live() -> Health:

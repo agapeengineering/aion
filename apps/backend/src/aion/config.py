@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     auth_secrets_file: Path | None = None
     local_mail_capture: bool = False
 
+    reminders_enabled: bool = False
+    resend_webhook_secret_file: Path | None = None
+
     resend_enabled: bool = False
     resend_api_key_file: Path | None = None
     email_from: str = "Aion <aion@mail.agape.engineering>"
@@ -29,6 +32,27 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_mail(self) -> Self:
+        if self.reminders_enabled and (
+            not self.auth_enabled or not (self.local_mail_capture or self.resend_enabled)
+        ):
+            raise ValueError("Reminders require configured authenticated mail delivery")
+        if (
+            self.reminders_enabled
+            and self.resend_enabled
+            and self.resend_webhook_secret_file is None
+        ):
+            raise ValueError("Real reminder delivery requires a webhook secret")
+        if self.reminders_enabled and self.resend_enabled:
+            try:
+                from svix.webhooks import Webhook
+
+                assert self.resend_webhook_secret_file
+                secret = self.resend_webhook_secret_file.read_text().strip()
+                if not secret.startswith("whsec_"):
+                    raise ValueError
+                Webhook(secret)
+            except OSError, ValueError:
+                raise ValueError("Reminder webhook secret is unavailable or invalid") from None
         if not self.resend_enabled:
             return self
         if self.local_mail_capture or not self.auth_enabled:

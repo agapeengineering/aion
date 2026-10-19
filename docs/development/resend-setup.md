@@ -1,6 +1,6 @@
 # Controlled Resend delivery from the local backend
 
-The verification worker supports Resend HTTPS delivery. Routine development/CI still uses Mailpit and synthetic mail. Real sending is opt-in and limited to an explicit recipient allowlist. Public accounts, reminders, suppression webhooks and the complete R2 account lifecycle/recovery gates remain pending. This setup changes no DNS, provider account, billing or public deployment.
+The verification worker supports Resend HTTPS delivery. Routine development/CI still uses Mailpit and synthetic mail. Real sending is opt-in and limited to an explicit recipient allowlist. Reminder preferences, scheduling and verified suppression webhooks are implemented locally. Real reminders stay off until a reachable webhook and its signing secret are configured; see [reminder setup](reminders-setup.md). Public accounts and the complete R2 account lifecycle/recovery gates remain pending. This setup changes no DNS, provider account, billing or public deployment.
 
 ## Configuration
 
@@ -44,7 +44,7 @@ docker compose -f deploy/compose.yaml -f deploy/compose.local.yaml \
   up -d --build --wait
 ```
 
-Then open <https://127.0.0.1:18443>, choose Account and request a fresh code for an allowlisted recipient. It arrives at the real mailbox, not Mailpit. Verify it, reload the account modal and sign out. The preview stores an account/session; calendar sync/reminders remain unavailable. The local HTTPS certificate is self-signed. The `localhost` alias redirects to the canonical IP origin. No resend smoke is performed automatically when files are prepared.
+Then open <https://127.0.0.1:18443>, choose Account and request a fresh code for an allowlisted recipient. It arrives at the real mailbox, not Mailpit. Verify it, reload the account page and sign out. The local preview also supports profile sync; reminders remain unavailable. The local HTTPS certificate is self-signed. The `localhost` alias redirects to the canonical IP origin. No resend smoke is performed automatically when files are prepared.
 
 API requests for other recipients receive localized `email_not_allowed`; the worker also checks the allowlist immediately before sending. Removing a recipient prevents its pending dispatch. Encrypted jobs from capture mode lack a frozen Resend body and are never converted into real sends. Request a fresh code after changing modes. Starting the override may dispatch eligible previously queued Resend jobs, so review pending state and recipient settings before enabling.
 
@@ -52,7 +52,7 @@ To return to capture, rebuild with `VITE_AION_AUTH=1 VITE_AION_AUTH_LOCAL=1 pnpm
 
 ## Delivery behavior and limits
 
-- HTTPS goes only to `https://api.resend.com/emails`, verifies server certificates and rejects redirects. A five-second socket timeout and bounded response read apply; no SDK-level retries or request/response-body logging. A queued request includes the original sender, Reply-To, recipient, localized subject/text and code, sealed at enqueue. The body is not rebuilt after a restart or configuration change.
+- HTTPS goes only to `https://api.resend.com/emails`, verifies server certificates and rejects redirects. A five-second socket timeout and bounded response read apply; no SDK-level retries or request/response-body logging. A queued request includes the original sender, Reply-To, recipient, localized subject/HTML/plain text and code, sealed at enqueue. The body is not rebuilt after a restart or configuration change.
 - The outbox UUID yields `aion-verification/<UUID>` as the idempotency key on every attempt. Codes/jobs expire in ten minutes, well inside Resend's documented 24-hour idempotency window. Requests never resume after expiry. A provider-accepted message cannot be recalled.
 - A durable pre-send uncertainty marker and attempt count survive a worker crash. An email advisory lock shared with challenge request/verify operations prevents concurrent dispatch and invalidation from interleaving; it spans the short provider call without holding a database transaction open over network I/O. Locks are released before returning a connection to the pool.
 - Up to six attempts, exponential backoff with jitter, provider `Retry-After`, and job expiry. 429/5xx/network failures retry; permanent 4xx and payload/idempotency conflicts stop. A concurrent-idempotent-request conflict may retry. The worker processes at most five due jobs per pass to bound heartbeat delays.
@@ -75,3 +75,6 @@ The API accepted the challenge (202). The worker obtained provider acceptance on
 The local preview remains in allowlisted Resend mode for manual review. Request a fresh code in the browser; the smoke code is consumed and was bound to the smoke client's cookie. This is integration evidence for the working tree, not a public deployment or the remaining R2 lifecycle/webhook/recovery release gates. Hosted CI and commit/push remain separate actions.
 
 The operator subsequently confirmed receiving the test email and confirmed that `support@agape.engineering` receives replies. The configured local Reply-To now uses that support alias; the single approved test-recipient allowlist remains in private local settings. The live smoke above used the earlier working Reply-To and is not evidence of a second send with the support alias.
+
+
+The [verification email design](../design/verification-email.md) documents the EN/ES HTML and plain-text template, synthetic preview command and rendering evidence. Body branding is implemented in the application, separately from recipient-provider inbox avatars/BIMI.

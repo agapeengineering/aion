@@ -135,6 +135,73 @@
         "title": "LoginResult",
         "type": "object"
       },
+      "Preferences": {
+        "additionalProperties": false,
+        "properties": {
+          "consent": {
+            "default": false,
+            "title": "Consent",
+            "type": "boolean"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "frequency": {
+            "default": "weekly",
+            "enum": [
+              "daily",
+              "weekly"
+            ],
+            "title": "Frequency",
+            "type": "string"
+          },
+          "include_phrase": {
+            "default": true,
+            "title": "Include Phrase",
+            "type": "boolean"
+          },
+          "language": {
+            "enum": [
+              "en",
+              "es"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "notice_version": {
+            "const": "2026-10-18",
+            "default": "2026-10-18",
+            "title": "Notice Version",
+            "type": "string"
+          },
+          "send_time": {
+            "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Send Time",
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 64,
+            "title": "Timezone",
+            "type": "string"
+          },
+          "weekday": {
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Weekday",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "timezone",
+          "send_time",
+          "weekday",
+          "language"
+        ],
+        "title": "Preferences",
+        "type": "object"
+      },
       "ProfileConflict": {
         "properties": {
           "current": {
@@ -239,6 +306,64 @@
           "profile"
         ],
         "title": "ProfileSnapshot",
+        "type": "object"
+      },
+      "ReminderSnapshot": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          },
+          "phrase_available": {
+            "title": "Phrase Available",
+            "type": "boolean"
+          },
+          "preferences": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Preferences"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "suppressed": {
+            "title": "Suppressed",
+            "type": "boolean"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "revision",
+          "preferences",
+          "next_due_at",
+          "suppressed",
+          "available",
+          "phrase_available"
+        ],
+        "title": "ReminderSnapshot",
         "type": "object"
       },
       "ValidationError": {
@@ -661,6 +786,190 @@
           }
         },
         "summary": "Put Profile"
+      }
+    },
+    "/api/v1/reminder-preferences": {
+      "get": {
+        "operationId": "get_preferences_api_v1_reminder_preferences_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Preferences"
+      },
+      "put": {
+        "operationId": "put_preferences_api_v1_reminder_preferences_put",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Aion-Account",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Aion-Account",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "title": "If-Match",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Preferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Preferences"
+      }
+    },
+    "/api/v1/unsubscribe/{token}": {
+      "get": {
+        "operationId": "unsubscribe_page_api_v1_unsubscribe__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsubscribe Page"
+      },
+      "post": {
+        "operationId": "unsubscribe_api_v1_unsubscribe__token__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsubscribe"
+      }
+    },
+    "/api/v1/webhooks/resend": {
+      "post": {
+        "operationId": "resend_event_api_v1_webhooks_resend_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Resend Event"
       }
     }
   }

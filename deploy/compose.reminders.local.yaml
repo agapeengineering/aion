@@ -1,0 +1,8 @@
+# Capture-only reminder preview. Add after compose.auth.local.yaml; never use with Resend.
+services:
+  api:
+    environment:
+      AION_REMINDERS_ENABLED: "true"
+  worker:
+    environment:
+      AION_REMINDERS_ENABLED: "true"

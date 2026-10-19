@@ -52,6 +52,10 @@ for (const language of ['en', 'es'] as const) {
           if (!mail) return false;
           const body = await (await request.get(`${inboxUrl}/api/v1/message/${mail.ID}`)).json();
           code = body.Text.match(/\b[0-9]{8}\b/)?.[0];
+          // Check multipart delivery without retaining a real challenge in assertion output.
+          expect(Boolean(body.HTML && body.HTML.includes(code) && body.HTML.includes('<h1'))).toBe(
+            true,
+          );
           return Boolean(code);
         },
         { timeout: 20000 },

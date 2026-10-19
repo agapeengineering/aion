@@ -42,3 +42,26 @@ def test_missing_file_has_no_os_exception_payload(tmp_path: Path) -> None:
     with pytest.raises(ValidationError, match="secret file is unavailable") as caught:
         Settings(database_url_file=tmp_path / "missing-private-file")
     assert "missing-private-file" not in str(caught.value)
+
+
+def test_real_reminders_require_readable_webhook_secret(tmp_path: Path) -> None:
+    import base64
+
+    values = {
+        "database_url": SecretStr(SYNTHETIC_URL),
+        "auth_enabled": True,
+        "resend_enabled": True,
+        "reminders_enabled": True,
+        "email_reply_to": "support@example.test",
+        "resend_allowed_recipients": ["recipient@example.test"],
+    }
+    with pytest.raises(ValidationError, match="requires a webhook secret"):
+        Settings(**values)
+    path = tmp_path / "webhook-secret"
+    with pytest.raises(ValidationError, match="unavailable or invalid"):
+        Settings(**values, resend_webhook_secret_file=path)
+    path.write_text("invalid")
+    with pytest.raises(ValidationError, match="unavailable or invalid"):
+        Settings(**values, resend_webhook_secret_file=path)
+    path.write_text("whsec_" + base64.b64encode(b"synthetic-signing-secret-only").decode())
+    assert Settings(**values, resend_webhook_secret_file=path).reminders_enabled

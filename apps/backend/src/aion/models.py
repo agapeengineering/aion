@@ -190,3 +190,82 @@ class ProfileMutation(Base):
     payload_digest: Mapped[bytes] = mapped_column(LargeBinary)
     result_revision: Mapped[int] = mapped_column(BigInteger)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ReminderPreference(Base):
+    __tablename__ = "reminder_preferences"
+    __table_args__ = (
+        CheckConstraint("revision > 0", name="revision_positive"),
+        CheckConstraint("frequency IN ('daily', 'weekly')", name="frequency"),
+        CheckConstraint("weekday BETWEEN 0 AND 6", name="weekday"),
+        CheckConstraint("language IN ('en', 'es')", name="language"),
+        CheckConstraint(
+            "NOT enabled OR (consent_at IS NOT NULL AND next_due_at IS NOT NULL)",
+            name="enabled_consent",
+        ),
+        Index("ix_reminder_preferences_due", "enabled", "next_due_at"),
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(BigInteger)
+    enabled: Mapped[bool] = mapped_column(server_default="false")
+    frequency: Mapped[str] = mapped_column(String(8))
+    timezone: Mapped[str] = mapped_column(String(64))
+    send_time: Mapped[str] = mapped_column(String(5))
+    weekday: Mapped[int]
+    language: Mapped[str] = mapped_column(String(2))
+    include_phrase: Mapped[bool]
+    consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    notice_version: Mapped[str] = mapped_column(String(32))
+    next_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    unsubscribe_digest: Mapped[bytes] = mapped_column(LargeBinary, unique=True)
+    encrypted_token: Mapped[bytes] = mapped_column(LargeBinary)
+
+
+class ReminderMail(Base):
+    __tablename__ = "reminder_mail"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'sent', 'accepted', 'cancelled', "
+            "'failed', 'uncertain', 'expired')",
+            name="status",
+        ),
+        CheckConstraint("attempts BETWEEN 0 AND 6", name="attempt_range"),
+        Index("uq_reminder_mail_day", "user_id", "local_date", unique=True),
+        Index("ix_reminder_mail_due", "status", "next_attempt_at"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    local_date: Mapped[date] = mapped_column(Date)
+    due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    preference_revision: Mapped[int] = mapped_column(BigInteger)
+    profile_revision: Mapped[int] = mapped_column(BigInteger)
+    status: Mapped[str] = mapped_column(String(16), server_default="pending")
+    attempts: Mapped[int] = mapped_column(server_default="0")
+    acceptance_unknown: Mapped[bool] = mapped_column(server_default="false")
+    encrypted_payload: Mapped[bytes | None] = mapped_column(LargeBinary)
+    provider_message_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    delivery_status: Mapped[str | None] = mapped_column(String(24))
+    phrase_id: Mapped[str | None] = mapped_column(String(80))
+    content_version: Mapped[str | None] = mapped_column(String(64))
+
+
+class EmailSuppression(Base):
+    __tablename__ = "email_suppressions"
+    email_digest: Mapped[bytes] = mapped_column(LargeBinary, primary_key=True)
+    reason: Mapped[str] = mapped_column(String(24))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class EmailEvent(Base):
+    __tablename__ = "email_events"
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    provider_message_id: Mapped[str] = mapped_column(String(64), index=True)
+    kind: Mapped[str] = mapped_column(String(32))
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

@@ -1,0 +1,151 @@
+{
+  "$defs": {
+    "Phrase": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "author": {
+          "title": "Author",
+          "type": "string"
+        },
+        "work": {
+          "title": "Work",
+          "type": "string"
+        },
+        "location": {
+          "title": "Location",
+          "type": "string"
+        },
+        "original_language": {
+          "maxLength": 35,
+          "minLength": 1,
+          "title": "Original Language",
+          "type": "string"
+        },
+        "original": {
+          "title": "Original",
+          "type": "string"
+        },
+        "source_url": {
+          "maxLength": 2048,
+          "pattern": "^https://[^\\s]+$",
+          "title": "Source Url",
+          "type": "string"
+        },
+        "rights": {
+          "title": "Rights",
+          "type": "string"
+        },
+        "approved": {
+          "title": "Approved",
+          "type": "boolean"
+        },
+        "en": {
+          "$ref": "#/$defs/Translation"
+        },
+        "es": {
+          "$ref": "#/$defs/Translation"
+        }
+      },
+      "required": [
+        "id",
+        "author",
+        "work",
+        "location",
+        "original_language",
+        "original",
+        "source_url",
+        "rights",
+        "approved",
+        "en",
+        "es"
+      ],
+      "title": "Phrase",
+      "type": "object"
+    },
+    "Translation": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "translator": {
+          "title": "Translator",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "rights": {
+          "title": "Rights",
+          "type": "string"
+        },
+        "approved": {
+          "title": "Approved",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "text",
+        "translator",
+        "source",
+        "rights",
+        "approved"
+      ],
+      "title": "Translation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "maximum": 1,
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "collectionVersion": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Collectionversion",
+      "type": "string"
+    },
+    "anchorSunday": {
+      "format": "date",
+      "title": "Anchorsunday",
+      "type": "string"
+    },
+    "sequence": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Sequence",
+      "type": "array"
+    },
+    "phrases": {
+      "items": {
+        "$ref": "#/$defs/Phrase"
+      },
+      "title": "Phrases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "version",
+    "collectionVersion",
+    "anchorSunday",
+    "sequence",
+    "phrases"
+  ],
+  "title": "Collection",
+  "type": "object"
+}

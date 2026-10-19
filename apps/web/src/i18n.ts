@@ -231,25 +231,4 @@ export const unitNames = {
     seconds: 'Segundos',
   },
 };
-export const phrases = [
-  {
-    en: 'Rest is part of a life well lived.',
-    es: 'El descanso forma parte de una vida bien vivida.',
-  },
-  {
-    en: 'Time is finite. Your attention can be a gift.',
-    es: 'El tiempo es finito. Tu atención puede ser un regalo.',
-  },
-  { en: 'Make room for the people who matter.', es: 'Haz espacio para las personas que importan.' },
-  { en: 'This ordinary day is part of your life.', es: 'Este día cotidiano es parte de tu vida.' },
-  { en: 'There is still a little sky to look at.', es: 'Todavía hay un poco de cielo por mirar.' },
-  { en: 'Give this week your attention.', es: 'Presta atención a esta semana.' },
-  {
-    en: 'Not every moment needs to become something.',
-    es: 'No todos los momentos tienen que convertirse en algo.',
-  },
-  {
-    en: 'Be here for the life that is happening.',
-    es: 'Está presente en la vida que está pasando.',
-  },
-];
+export { phrases } from './phrases';

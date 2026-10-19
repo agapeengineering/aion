@@ -12,6 +12,8 @@ dependencies = [
   "pydantic-settings==2.16.0",
   "cryptography==50.0.2",
   "email-validator==2.3.0",
+  "svix==1.88.0",
+  "tzdata==2026.5",
 ]
 
 [dependency-groups]

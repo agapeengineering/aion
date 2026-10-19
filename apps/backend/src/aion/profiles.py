@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, model_validator
 from sqlalchemy.orm import Session as DbSession
 
-from aion.auth import AuthError, service
+from aion.auth import AuthError, lock_email, service
 from aion.calendar import calculate, parse_date
 from aion.models import Profile, ProfileMutation, User
 
@@ -110,6 +110,9 @@ def mutate(
         identity, _ = auth.session_in(db, request, write=True)
         if identity.id != owner:
             raise AuthError(409, "account_changed")
+        user = db.get(User, identity.id)
+        assert user
+        lock_email(db, user.email, auth.keys)
         # All sessions of an owner serialize here, including an initial create.
         db.get(User, identity.id, with_for_update=True)
         row = db.get(Profile, identity.id)
@@ -150,6 +153,24 @@ def mutate(
                 created_at=auth.clock(),
             )
         )
+        if value is None:
+            from aion.reminders import stop
+
+            stop(db, identity.id)
+        else:
+            from sqlalchemy import case, update
+
+            from aion.models import ReminderMail
+
+            db.execute(
+                update(ReminderMail)
+                .where(ReminderMail.user_id == identity.id, ReminderMail.status == "pending")
+                .values(
+                    status=case((ReminderMail.acceptance_unknown, "uncertain"), else_="cancelled"),
+                    encrypted_payload=None,
+                    lease_until=None,
+                )
+            )
         db.flush()
         return response(snapshot(identity.id, row))
 
@@ -167,6 +188,5 @@ def put_profile(
 def reset_profile(
     request: Request, owner: Owner, match: Match, operation: Operation
 ) -> JSONResponse:
-    # No reminder tables exist yet. Future reminder enrollment must join this same
-    # reset transaction to disable consent/cancel jobs before reminders are enabled.
+    # Reset disables consent and cancels pending mail in the same owned transaction.
     return mutate(request, owner, match, operation, None)

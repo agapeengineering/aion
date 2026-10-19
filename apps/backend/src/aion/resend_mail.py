@@ -34,7 +34,11 @@ def post_email(key: str, payload: dict[str, object], idempotency_key: str) -> Pr
         headers={
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
-            "Idempotency-Key": f"aion-verification/{idempotency_key}",
+            "Idempotency-Key": (
+                f"aion-reminder/{idempotency_key.removeprefix('reminder/')}"
+                if idempotency_key.startswith("reminder/")
+                else f"aion-verification/{idempotency_key}"
+            ),
             "User-Agent": "Aion/0.1",
         },
         method="POST",

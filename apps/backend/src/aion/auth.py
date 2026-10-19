@@ -350,6 +350,14 @@ class AuthService:
     ) -> tuple[Identity, str]:
         token = request.cookies.get(SESSION_COOKIE, "")
         now = self.clock()
+        if write:
+            address = db.scalar(
+                select(User.email)
+                .join(Session, Session.user_id == User.id)
+                .where(Session.token_digest == token_digest(token))
+            )
+            if address:
+                lock_email(db, address, self.keys)
         session = db.scalars(
             select(Session).where(Session.token_digest == token_digest(token)).with_for_update()
         ).first()

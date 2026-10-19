@@ -1270,3 +1270,41 @@ tbody .selected-unit th {
 .login-sheet form .form-actions > .button:first-child {
   width: 100%;
 }
+
+.reminder-panel {
+  overflow-wrap: anywhere;
+  border-top: 1px solid var(--rule);
+  padding-block: 32px;
+  margin-block: 32px;
+}
+.reminder-panel fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.reminder-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+.reminder-panel .reminder-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 20px 0;
+  font-size: 14px;
+}
+.reminder-panel .reminder-check input {
+  width: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--ink);
+}
+@media (max-width: 540px) {
+  .reminder-fields {
+    grid-template-columns: 1fr;
+  }
+}

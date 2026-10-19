@@ -18,7 +18,7 @@ export const syncWords = {
       'Account storage is unavailable or protected. Pending changes may exist only in this tab; keep it open until sync succeeds.',
     heading: 'Your calendar, across devices.',
     privacy:
-      'Saving sends your birth date, lifespan and preferences to your account. Reminders stay off.',
+      'Saving sends your birth date, lifespan and preferences to your account. Reminders require a separate opt-in.',
     device: 'This device',
     account: 'Account',
     empty: 'No saved calendar',
@@ -59,7 +59,7 @@ export const syncWords = {
       'El almacenamiento de la cuenta no está disponible o está protegido. Los cambios pendientes pueden estar solo en esta pestaña; mantenla abierta hasta sincronizarlos.',
     heading: 'Tu calendario, entre dispositivos.',
     privacy:
-      'Guardar envía tu fecha de nacimiento, horizonte y preferencias a tu cuenta. Los recordatorios siguen desactivados.',
+      'Guardar envía tu fecha de nacimiento, horizonte y preferencias a tu cuenta. Los recordatorios requieren consentimiento aparte.',
     device: 'Este dispositivo',
     account: 'Cuenta',
     empty: 'Sin calendario guardado',
