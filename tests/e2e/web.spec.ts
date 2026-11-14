@@ -21,7 +21,11 @@ test('setup, edit, reload, privacy and confirmed reset preserve other site data'
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.getByRole('button', { name: 'Privacy', exact: true }).click();
-  await expect(page.getByRole('dialog')).toContainText('There are no accounts');
+  await expect(page.getByRole('dialog')).toContainText(
+    process.env.AION_AUTH_TESTS === '1'
+      ? 'Optional sign-in sends your email and code to the account service.'
+      : 'There are no accounts',
+  );
   await page.keyboard.press('Escape');
   await page.evaluate(() => localStorage.setItem('unrelated:test', 'keep'));
   await page.getByRole('button', { name: 'Reset my calendar', exact: true }).click();
@@ -132,26 +136,38 @@ test('cross-tab settings and clear events synchronize locally', async ({ page, c
   await expect(page.getByLabel('Date of birth', { exact: true })).toBeVisible();
   await other.close();
 });
-test('Spanish mobile layout and accessibility in both main states', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 800 });
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/es');
-  await expect(page.getByRole('heading', { name: 'Una vida, en semanas.' })).toBeVisible();
-  expect(
-    (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
-      .violations,
-  ).toEqual([]);
-  await page.getByLabel('Fecha de nacimiento', { exact: true }).fill('2000-01-01');
-  await page.getByRole('button', { name: 'Ver mis semanas', exact: true }).click();
-  await expect(page.getByTestId('lived-seconds')).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
-  expect(
-    (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
-      .violations,
-  ).toEqual([]);
-});
+for (const language of ['en', 'es'] as const) {
+  test(`320px calendar and accessibility before and after setup (${language})`, async ({
+    page,
+  }) => {
+    const es = language === 'es';
+    await page.setViewportSize({ width: 320, height: 800 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(es ? '/es' : '/');
+    await expect(
+      page.getByRole('heading', { name: es ? 'Una vida, en semanas.' : 'A life, in weeks.' }),
+    ).toBeVisible();
+
+    async function checkLayout() {
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      expect(
+        (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
+          .violations,
+      ).toEqual([]);
+    }
+    await checkLayout();
+    await page
+      .getByLabel(es ? 'Fecha de nacimiento' : 'Date of birth', { exact: true })
+      .fill('2000-01-01');
+    await page
+      .getByRole('button', { name: es ? 'Ver mis semanas' : 'See my weeks', exact: true })
+      .click();
+    await expect(page.getByTestId('lived-seconds')).toBeVisible();
+    await checkLayout();
+  });
+}
 test('network contains only same-origin assets and no private input', async ({ page, baseURL }) => {
   const requests: string[] = [],
     errors: string[] = [];
