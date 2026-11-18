@@ -56,7 +56,15 @@ def main() -> int:
                 try:
                     cleanup_expired(engine, utc_now())
                     if auth is not None and sender is not None:
-                        deliver_pending(engine, auth.keys, sender, utc_now())
+                        deliver_pending(
+                            engine,
+                            auth.keys,
+                            sender,
+                            utc_now(),
+                            daily_limit=settings.resend_daily_limit
+                            if settings.resend_enabled
+                            else None,
+                        )
                         schedule_due(auth, utc_now())
                         deliver_reminders(auth, sender, utc_now())
                 except SQLAlchemyError:

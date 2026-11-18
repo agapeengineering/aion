@@ -277,14 +277,20 @@ def delete_account(value: DeleteInput, request: Request, owner: Owner) -> Respon
         recent(auth, current)
         # session_in(write=True) holds the shared delivery barrier through commit.
         stop(db, user.id)
+        digest = auth.keys.digest("suppression", user.email)
+        deleted_at = auth.clock()
         db.add(
             DeletionLedger(
                 user_id=user.id,
-                email_digest=auth.keys.digest("suppression", user.email),
-                deleted_at=auth.clock(),
+                email_digest=digest,
+                deleted_at=deleted_at,
             )
         )
         # Login challenges have no owner FK. Remove them by the verified canonical address too.
         db.execute(delete(EmailChallenge).where(EmailChallenge.email == user.email))
         db.delete(user)
+        if auth.journal is not None:
+            # Check SQL while it can still roll back, then require independent durability.
+            db.flush()
+            auth.journal.deletion(owner, digest, deleted_at)
     return clear_cookies(Response(status_code=204))

@@ -1,0 +1,18 @@
+[Unit]
+Description=Aion staging off-instance write-ahead recovery journal
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+OnFailure=aion-staging-recovery-failure@%n.service
+
+[Service]
+Type=simple
+UMask=0077
+EnvironmentFile=/opt/aion-staging/recovery/backup.env
+ExecStartPre=/usr/bin/install -d -m 0750 -o root -g 10001 /opt/aion-staging/recovery/journal
+ExecStart=/usr/bin/python3 /opt/aion-staging/recovery/journal_server.py /opt/aion-staging/recovery/journal/journal.sock
+Restart=on-failure
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target

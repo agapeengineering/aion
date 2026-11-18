@@ -92,12 +92,16 @@ class ResendSender:
         except OSError, ValueError:
             raise ValueError("Resend key configuration is unavailable or invalid") from None
         self._key = key
-        self.allowed = frozenset(settings.resend_allowed_recipients)
+        self.settings = settings
         self.transport = transport
 
     def send(self, message: Message, key: str) -> str:
         payload = message.provider_payload
-        if message.email not in self.allowed or not payload or payload.get("to") != [message.email]:
+        if (
+            not self.settings.resend_recipient_allowed(message.email)
+            or not payload
+            or payload.get("to") != [message.email]
+        ):
             raise PermanentDeliveryError
         # The entire request body was sealed at enqueue, including sender/template/Reply-To.
         response = self.transport(self._key, payload, key)

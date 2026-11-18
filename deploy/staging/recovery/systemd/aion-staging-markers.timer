@@ -1,0 +1,10 @@
+[Unit]
+Description=Copy Aion staging recovery markers every five minutes
+
+[Timer]
+OnCalendar=*-*-* *:0/5:00 UTC
+Persistent=true
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

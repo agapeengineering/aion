@@ -16,6 +16,7 @@ from aion.config import Settings
 from aion.database import is_ready, make_engine
 from aion.mail_events import router as event_router
 from aion.profiles import router as profile_router
+from aion.recovery_journal import JournalUnavailable
 from aion.reminders import router as reminder_router
 
 
@@ -78,6 +79,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(SQLAlchemyError)
     async def database_error(request: Request, exc: SQLAlchemyError) -> JSONResponse:
         return JSONResponse(status_code=503, content={"error": {"code": "unavailable"}})
+
+    @app.exception_handler(JournalUnavailable)
+    async def journal_error(request: Request, exc: JournalUnavailable) -> JSONResponse:
+        return JSONResponse(status_code=503, content={"error": {"code": "recovery_unavailable"}})
 
     app.include_router(router)
     app.include_router(account_router)

@@ -1,0 +1,18 @@
+x-journal: &journal
+  AION_RECOVERY_JOURNAL_SOCKET: /run/aion-journal/journal.sock
+  AION_RECOVERY_JOURNAL_EPOCH_FILE: /run/secrets/journal_epoch
+
+services:
+  api:
+    environment: *journal
+    secrets: [journal_epoch]
+    volumes:
+      - /opt/aion-staging/recovery/journal:/run/aion-journal:ro
+
+  worker:
+    environment: *journal
+    secrets: [journal_epoch]
+
+secrets:
+  journal_epoch:
+    file: ${AION_STAGING_STATE_DIR:?Set the isolated state directory}/journal-epoch

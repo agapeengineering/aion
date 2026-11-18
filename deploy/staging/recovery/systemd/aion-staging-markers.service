@@ -1,0 +1,12 @@
+[Unit]
+Description=Aion staging independent deletion and suppression marker copy
+After=docker.service network-online.target
+Wants=network-online.target
+OnFailure=aion-staging-recovery-failure@%n.service
+
+[Service]
+Type=oneshot
+UMask=0077
+EnvironmentFile=/opt/aion-staging/recovery/backup.env
+ExecStart=/bin/sh /opt/aion-staging/recovery/backup.sh markers
+TimeoutStartSec=4min

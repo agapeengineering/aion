@@ -18,6 +18,15 @@ case "$AION_STAGING_STATE_DIR" in
     *) printf '%s\n' "The staging state path must be absolute." >&2; exit 1 ;;
 esac
 
+compose() {
+    if [ -f "$AION_STAGING_STATE_DIR/journal-epoch" ]; then
+        docker compose -p aion-staging --env-file images.env \
+            -f compose.yaml -f compose.journal.yaml "$@"
+    else
+        docker compose -p aion-staging --env-file images.env -f compose.yaml "$@"
+    fi
+}
+
 if [ "$(docker version --format '{{.Server.Os}}/{{.Server.Arch}}')" != linux/arm64 ]; then
     printf '%s\n' "Use a Linux ARM64 Docker engine for this release." >&2
     exit 1
@@ -51,7 +60,7 @@ print(f"Verified image archive for source {revision}.")
 PY
 
 if "$check_only"; then
-    docker compose -p aion-staging --env-file images.env config --quiet
+    compose config --quiet
     exit 0
 fi
 
@@ -75,5 +84,5 @@ for image in "$AION_BACKEND_IMAGE" "$AION_WEB_IMAGE"; do
     fi
 done
 
-docker compose -p aion-staging --env-file images.env config --quiet
-docker compose -p aion-staging --env-file images.env up -d --no-build --wait --wait-timeout 120
+compose config --quiet
+compose up -d --no-build --wait --wait-timeout 120
