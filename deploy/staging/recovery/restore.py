@@ -8,7 +8,13 @@ import subprocess
 import tarfile
 from pathlib import Path
 
-from capture import CONFIG_FILES, STATE_FILES, digest
+from capture import (
+    CONFIG_FILES,
+    PRODUCTION_CONFIG,
+    PRODUCTION_SECRETS,
+    STATE_FILES,
+    digest,
+)
 from reconcile import SCHEMA, reconciliation, utc
 
 
@@ -45,34 +51,59 @@ def unpack(archive: Path, target: Path, expected: set[str]) -> None:
 
 
 def restore(
-    inputs: Path, target: Path, project: str, through: str, *, require_journal: bool = False
+    inputs: Path,
+    target: Path,
+    project: str,
+    through: str,
+    *,
+    require_journal: bool = False,
 ) -> None:
     if not re.fullmatch(r"aion-recovery-[a-z0-9]+", project) or target.exists():
         raise ValueError("Choose a new disposable recovery project and directory.")
     target.mkdir(mode=0o700)
+    with tarfile.open(inputs / "snapshot.tar.gz", "r:gz") as archive:
+        info = archive.getmember("snapshot.json")
+        if not info.isfile() or not 0 < info.size <= 16384:
+            raise ValueError("Invalid snapshot manifest.")
+        member = archive.extractfile(info)
+        if member is None:
+            raise ValueError("Missing snapshot manifest.")
+        manifest = json.load(member)
+    deployment = manifest.get("deployment")
+    if deployment not in (None, "production"):
+        raise ValueError("Unsupported snapshot deployment.")
+    production = deployment == "production"
+    config_files = CONFIG_FILES + (PRODUCTION_CONFIG if production else ())
+    state_files = STATE_FILES + (PRODUCTION_SECRETS if production else ())
     unpack(
         inputs / "snapshot.tar.gz",
         target,
         {
             "snapshot.json",
             "database.dump",
-            *(f"release/{name}" for name in CONFIG_FILES),
+            *(f"release/{name}" for name in config_files),
         },
     )
-    manifest = json.loads((target / "snapshot.json").read_text())
-    if require_journal and not manifest.get("journal_epoch"):
+    if (production or require_journal) and not manifest.get("journal_epoch"):
         raise ValueError("Public account recovery requires a snapshot with a journal epoch.")
     if (
         digest(target / "database.dump") != manifest["database_sha256"]
         or digest(inputs / "keys.tar.gz") != manifest["keys_sha256"]
     ):
         raise ValueError("Recovery archive checksum mismatch.")
-    unpack(inputs / "keys.tar.gz", target / "state", set(STATE_FILES))
+    unpack(inputs / "keys.tar.gz", target / "state", set(state_files))
     if digest(target / "state/auth-keys.json") != manifest["key_fingerprint"]:
         raise ValueError("Restored application keys do not match the backup.")
     (target / "state").chmod(0o700)
-    for name in STATE_FILES:
-        (target / "state" / name).chmod(0o444)
+    for name in state_files:
+        (target / "state" / name).chmod(
+            0o600 if name in {"mail.env", "origin-recovery.tar.gz"} else 0o444
+        )
+    if (
+        production
+        and (target / "state/journal-epoch").read_text().strip() != manifest["journal_epoch"]
+    ):
+        raise ValueError("Restored production journal epoch differs from the manifest.")
     program = reconciliation(
         manifest, json.loads((inputs / "markers.json").read_text()), utc(through)
     )

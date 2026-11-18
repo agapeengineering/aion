@@ -20,9 +20,13 @@ EVENT_KEYS = {
 }
 
 
-def prefix(epoch: str, *, drill: bool) -> str:
+def prefix(epoch: str, *, drill: bool, production: bool = False) -> str:
     if not re.fullmatch(EPOCH_PATTERN, epoch):
         raise ValueError("Invalid recovery journal epoch.")
+    if production:
+        if drill:
+            raise ValueError("Choose either a production or a rehearsal journal.")
+        return f"markers/production/journal/{epoch}/"
     return ("markers/drills/journal/" if drill else "markers/journal/") + epoch + "/"
 
 
@@ -60,7 +64,11 @@ def name(raw: bytes) -> str:
 
 
 def merge(
-    baseline: dict, objects: dict[str, bytes], epoch: str, fingerprint: str, fenced_at: datetime
+    baseline: dict,
+    objects: dict[str, bytes],
+    epoch: str,
+    fingerprint: str,
+    fenced_at: datetime,
 ) -> dict:
     check_identity(baseline, epoch, fingerprint)
     baseline_at = utc(baseline["captured_at"])
@@ -80,7 +88,10 @@ def merge(
         for row in marker["suppressions"]:
             digest, reason, stamp = row
             previous = suppressions.get(digest)
-            if previous is None or (utc(stamp), reason) < (utc(previous[-1]), previous[1]):
+            if previous is None or (utc(stamp), reason) < (
+                utc(previous[-1]),
+                previous[1],
+            ):
                 suppressions[digest] = row
 
     add(baseline)

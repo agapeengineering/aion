@@ -23,7 +23,12 @@ AWS_IMAGE = (
 
 class JournalWriter:
     def __init__(self, bucket: str, region: str, account: str, path: str) -> None:
-        self.bucket, self.region, self.account, self.path = bucket, region, account, path
+        self.bucket, self.region, self.account, self.path = (
+            bucket,
+            region,
+            account,
+            path,
+        )
 
     def store(self, record: bytes) -> None:
         container = "aion-journal-" + uuid.uuid4().hex
@@ -89,7 +94,11 @@ class JournalWriter:
 
 
 def serve(
-    socket: Path, epoch: str, fingerprint: str, write: Callable[[bytes], None], group: int
+    socket: Path,
+    epoch: str,
+    fingerprint: str,
+    write: Callable[[bytes], None],
+    group: int,
 ) -> None:
     class Handler(socketserver.StreamRequestHandler):
         def handle(self) -> None:
@@ -129,6 +138,7 @@ def main() -> None:
     parser.add_argument("socket", type=Path)
     parser.add_argument("--group", type=int, default=10001)
     parser.add_argument("--drill", action="store_true")
+    parser.add_argument("--production", action="store_true")
     args = parser.parse_args()
     os.umask(0o077)
     try:
@@ -142,7 +152,7 @@ def main() -> None:
             os.environ["AION_RECOVERY_BUCKET"],
             os.environ["AION_RECOVERY_REGION"],
             os.environ["AION_RECOVERY_ACCOUNT"],
-            prefix(epoch, drill=args.drill),
+            prefix(epoch, drill=args.drill, production=args.production),
         )
         serve(args.socket, epoch, fingerprint, writer.store, args.group)
     except (OSError, KeyError, ValueError) as exc:

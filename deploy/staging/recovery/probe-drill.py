@@ -145,6 +145,7 @@ def main() -> None:
                 event = {
                     "type": "email.bounced",
                     "data": {
+                        "bounce": {"type": "Permanent"},
                         "email_id": str(uuid.uuid4()),
                         "from": settings.email_from,
                         "to": ["retained-recovery@example.test"],

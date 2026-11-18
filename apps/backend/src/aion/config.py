@@ -1,5 +1,6 @@
 """Explicit configuration; never infer production credentials or read a tracked .env."""
 
+import base64
 import re
 from email.utils import formataddr, parseaddr
 from pathlib import Path
@@ -10,6 +11,15 @@ from pydantic import Field, PrivateAttr, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
+from svix.webhooks import Webhook
+
+
+def webhook_verifier(path: Path) -> Webhook:
+    secret = path.read_text(encoding="ascii").strip()
+    prefix, separator, encoded = secret.partition("_")
+    if prefix != "whsec" or not separator or len(base64.b64decode(encoded, validate=True)) < 16:
+        raise ValueError("Invalid provider signing secret")
+    return Webhook(secret)
 
 
 class Settings(BaseSettings):
@@ -77,12 +87,7 @@ class Settings(BaseSettings):
             if self.resend_webhook_secret_file is None:
                 raise ValueError("This mail configuration requires a webhook secret")
             try:
-                from svix.webhooks import Webhook
-
-                secret = self.resend_webhook_secret_file.read_text().strip()
-                if not secret.startswith("whsec_"):
-                    raise ValueError
-                Webhook(secret)
+                webhook_verifier(self.resend_webhook_secret_file)
             except OSError, ValueError:
                 raise ValueError("Mail webhook secret is unavailable or invalid") from None
         if not self.resend_enabled:

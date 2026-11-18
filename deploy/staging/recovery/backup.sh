@@ -37,9 +37,12 @@ python3 ./capture.py "$kind" "$AION_STAGING_RELEASE_DIR" "$AION_STAGING_STATE_DI
     --project "$project"
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
 object="$timestamp-${work##*.}"
-if [ "$project" != aion-staging ]; then
-    object="drills/$project/$object"
-fi
+case "$project" in
+    aion-staging) namespace=Aion/StagingRecovery ;;
+    aion-production) namespace=Aion/ProductionRecovery; object="production/$object" ;;
+    aion-recovery-*) namespace=; object="drills/$project/$object" ;;
+    *) exit 2 ;;
+esac
 
 aws() {
     # The role stays on this EC2 instance. Only the temporary capture directory is mounted.
@@ -67,11 +70,11 @@ else
     upload "$AION_BACKUP_BUCKET" "snapshots/$object.tar.gz" snapshot.tar.gz
     printf 'Stored database and encrypted key backups %s\n' "$object"
 fi
-if [ "$project" = aion-staging ]; then
+if [ -n "$namespace" ]; then
     case "$kind" in
         snapshot) metric=DatabaseSnapshot ;;
         markers) metric=IndependentMarkers ;;
     esac
-    aws cloudwatch put-metric-data --namespace Aion/StagingRecovery \
+    aws cloudwatch put-metric-data --namespace "$namespace" \
         --metric-data "MetricName=$metric,Value=1,Unit=Count"
 fi

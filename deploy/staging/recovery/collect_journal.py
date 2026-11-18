@@ -76,22 +76,31 @@ def main() -> None:
     )
     parser.add_argument("destination", type=Path)
     parser.add_argument(
-        "--fenced-at", required=True, help="Verified cutoff of all source writers in UTC"
+        "--fenced-at",
+        required=True,
+        help="Verified cutoff of all source writers in UTC",
     )
     parser.add_argument("--drill", action="store_true")
+    parser.add_argument("--production", action="store_true")
     args = parser.parse_args()
     os.umask(0o077)
     try:
         fenced_at = utc(args.fenced_at)
         if fenced_at > datetime.now(UTC):
             raise ValueError("The source fence must have already happened.")
-        path = prefix(args.epoch, drill=args.drill)
+        path = prefix(args.epoch, drill=args.drill, production=args.production)
         baseline, records = collect(args.bucket, args.region, args.owner, path)
         result = merge(baseline, records, args.epoch, args.fingerprint, fenced_at)
         with args.destination.open("x") as target:
             json.dump(result, target)
         print(f"Collected and verified {len(records)} independent recovery journal objects.")
-    except (OSError, TypeError, ValueError, KeyError, subprocess.CalledProcessError) as exc:
+    except (
+        OSError,
+        TypeError,
+        ValueError,
+        KeyError,
+        subprocess.CalledProcessError,
+    ) as exc:
         raise SystemExit(
             "Could not prove recovery journal coverage. Keep traffic and sends disabled."
         ) from exc

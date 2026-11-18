@@ -281,6 +281,8 @@ def sign_event(auth, tmp_path, event_id, kind, provider_id, **changes):
     path = tmp_path / "webhook-secret"
     path.write_text(secret)
     auth[1].settings.resend_webhook_secret_file = path
+    if kind == "email.bounced":
+        changes.setdefault("bounce", {"type": "Permanent"})
     body = json.dumps(
         {
             "type": kind,

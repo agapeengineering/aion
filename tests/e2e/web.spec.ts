@@ -23,7 +23,7 @@ test('setup, edit, reload, privacy and confirmed reset preserve other site data'
   await page.getByRole('button', { name: 'Privacy', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText(
     process.env.AION_AUTH_TESTS === '1'
-      ? 'Optional sign-in sends your email and code to the account service.'
+      ? 'Saving a calendar to your account stores your birth date, chosen lifespan and settings on AWS'
       : 'There are no accounts',
   );
   await page.keyboard.press('Escape');

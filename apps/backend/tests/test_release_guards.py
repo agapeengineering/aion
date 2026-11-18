@@ -199,3 +199,23 @@ def test_shared_daily_limit_serializes_concurrent_reservations(auth):
         assert sum(pool.map(attempt, range(10))) == 3
     with DbSession(service.engine) as db:
         assert full(db, now[0], 3)
+
+
+@pytest.mark.parametrize("bounce", [{"type": "Temporary"}, {"type": "Undetermined"}, {}, None])
+def test_nonpermanent_bounce_records_event_without_blocking_future_login(auth, tmp_path, bounce):
+    body, headers = sign_event(
+        auth, tmp_path, "transient", "email.bounced", str(uuid.uuid4()), bounce=bounce
+    )
+    assert auth[0].post("/api/v1/webhooks/resend", headers=headers, content=body).status_code == 204
+    with DbSession(auth[1].engine) as db:
+        assert db.scalar(select(func.count()).select_from(EmailEvent)) == 1
+        assert db.scalar(select(func.count()).select_from(EmailSuppression)) == 0
+
+
+@pytest.mark.parametrize("value", ["whsec_", "whsec_YQ==", "whsec_%%%"])
+def test_invalid_webhook_key_is_an_operator_error(auth, tmp_path, value):
+    body, headers = sign_event(auth, tmp_path, "delivery", "email.delivered", str(uuid.uuid4()))
+    auth[1].settings.resend_webhook_secret_file.write_text(value)
+    response = auth[0].post("/api/v1/webhooks/resend", headers=headers, content=body)
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "webhook_unavailable"

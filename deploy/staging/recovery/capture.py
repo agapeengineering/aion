@@ -35,6 +35,14 @@ STATE_FILES = (
     "tls.key",
 )
 EPOCH_FILE = "journal-epoch"
+PRODUCTION_CONFIG = ("compose.journal.yaml", "compose.production.yaml")
+PRODUCTION_SECRETS = (
+    EPOCH_FILE,
+    "mail.env",
+    "resend-worker-key",
+    "resend-webhook-secret",
+    "origin-recovery.tar.gz",
+)
 READ_MARKERS = """
 BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
 SET LOCAL timezone TO 'UTC';
@@ -120,11 +128,15 @@ def capture(
     target: Path,
     project: str,
 ) -> None:
-    if project != "aion-staging" and not re.fullmatch(r"aion-recovery-[a-z0-9]+", project):
-        raise ValueError("Select the staging project or a disposable recovery project.")
+    if project not in {"aion-staging", "aion-production"} and not re.fullmatch(
+        r"aion-recovery-[a-z0-9]+", project
+    ):
+        raise ValueError("Select an Aion deployment or a disposable recovery project.")
     if target.exists() or not state.is_dir() or state.is_symlink():
         raise ValueError("Choose a new capture directory and the private staging state directory.")
-    files = [state / filename for filename in STATE_FILES]
+    production = project == "aion-production"
+    names = STATE_FILES + (PRODUCTION_SECRETS if production and kind == "snapshot" else ())
+    files = [state / filename for filename in names]
     if stat.S_IMODE(state.stat().st_mode) != 0o700 or any(
         not path.is_file() or path.is_symlink() for path in files
     ):
@@ -204,7 +216,9 @@ def capture(
         raise ValueError("Database capture is empty or the recovery configuration changed.")
 
     manifest = target / "snapshot.json"
-    config = [release / filename for filename in CONFIG_FILES]
+    config = [
+        release / filename for filename in CONFIG_FILES + (PRODUCTION_CONFIG if production else ())
+    ]
     if any(not path.is_file() or path.is_symlink() for path in config):
         raise ValueError("Incomplete or invalid release files.")
     keys = target / "keys.tar.gz"
@@ -219,6 +233,7 @@ def capture(
         json.dumps(
             {
                 "format": 1,
+                **({"deployment": "production"} if production else {}),
                 "schema_revision": revision,
                 "snapshot_at": snapshot_at.isoformat(),
                 "source_revision": release_manifest["source_revision"],

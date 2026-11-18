@@ -1,0 +1,54 @@
+# Use with compose.yaml and compose.journal.yaml, under a dedicated aion-production project.
+# The shared TLS proxy joins only the private frontend network at the address trusted below.
+x-production-mail: &production-mail
+  AION_AUTH_ENABLED: "true"
+  AION_AUTH_ORIGIN: ${AION_ACCOUNT_ORIGIN:-https://aion.agape.engineering}
+  AION_LOCAL_MAIL_CAPTURE: "false"
+  AION_RESEND_ENABLED: "true"
+  AION_RESEND_PUBLIC_ACCOUNTS: ${AION_PUBLIC_MAIL:-false}
+  AION_RESEND_WEBHOOK_SECRET_FILE: /run/secrets/webhook_signing
+  AION_REMINDERS_ENABLED: "false"
+
+services:
+  api:
+    env_file: ${AION_STAGING_STATE_DIR:?Set a separate production state directory}/mail.env
+    environment: *production-mail
+    command: [uvicorn, "aion.main:create_app", --factory, "--host=0.0.0.0", "--port=8000", --no-access-log, --proxy-headers, "--forwarded-allow-ips=172.30.244.3"]
+    networks:
+      database: {}
+      frontend: {ipv4_address: 172.30.244.4}
+    secrets: [webhook_signing]
+    volumes:
+      - ${AION_PRODUCTION_JOURNAL_DIR:?Set the production relay directory}:/run/aion-journal:ro
+
+  worker:
+    env_file: ${AION_STAGING_STATE_DIR}/mail.env
+    environment:
+      <<: *production-mail
+      AION_RESEND_API_KEY_FILE: /run/secrets/resend_api_key
+    networks: !override [database, delivery]
+    secrets: [resend_api_key, webhook_signing]
+
+  web:
+    networks: !override
+      frontend: {ipv4_address: 172.30.244.2}
+    ports: !reset []
+    secrets: !reset []
+    volumes: !reset []
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/version.json]
+
+  mailpit:
+    profiles: [capture]
+
+networks:
+  frontend:
+    ipam:
+      config: !override [{subnet: 172.30.244.0/29}]
+  delivery: {}
+
+secrets:
+  webhook_signing:
+    file: ${AION_STAGING_STATE_DIR}/resend-webhook-secret
+  resend_api_key:
+    file: ${AION_STAGING_STATE_DIR}/resend-worker-key

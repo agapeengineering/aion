@@ -10,9 +10,10 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session as DbSession
 from starlette.concurrency import run_in_threadpool
-from svix.webhooks import Webhook, WebhookVerificationError
+from svix.webhooks import WebhookVerificationError
 
 from aion.auth import AuthError, AuthService, canonical_email, lock_email, service
+from aion.config import webhook_verifier
 from aion.models import EmailEvent, EmailSuppression, ReminderMail, User, VerificationMail
 from aion.reminders import stop
 
@@ -40,8 +41,12 @@ async def resend_event(request: Request) -> Response:
         if len(data) > 16384:
             raise AuthError(413, "request_too_large")
     try:
-        verified: Any = Webhook(path.read_text().strip()).verify(bytes(data), dict(request.headers))
-    except OSError, ValueError, WebhookVerificationError, UnicodeError:
+        verifier = webhook_verifier(path)
+    except OSError, ValueError:
+        raise AuthError(503, "webhook_unavailable") from None
+    try:
+        verified: Any = verifier.verify(bytes(data), dict(request.headers))
+    except ValueError, WebhookVerificationError:
         raise AuthError(400, "invalid_webhook") from None
     key = request.headers.get("svix-id", "")
     if not isinstance(verified, dict) or not key or len(key) > 128:
@@ -64,11 +69,24 @@ async def resend_event(request: Request) -> Response:
     ):
         raise AuthError(400, "invalid_webhook")
     sender = parseaddr(str(details.get("from", "")))[1].lower()
-    return await run_in_threadpool(apply_event, auth, key, kind, provider_id, sender, recipients)
+    bounce = details.get("bounce")
+    permanent = isinstance(bounce, dict) and bounce.get("type") == "Permanent"
+    suppress = kind in {"email.complained", "email.suppressed"} or (
+        kind == "email.bounced" and permanent
+    )
+    return await run_in_threadpool(
+        apply_event, auth, key, kind, provider_id, sender, recipients, suppress
+    )
 
 
 def apply_event(
-    auth: AuthService, key: str, kind: str, provider_id: str, sender: str, recipients: list[str]
+    auth: AuthService,
+    key: str,
+    kind: str,
+    provider_id: str,
+    sender: str,
+    recipients: list[str],
+    suppress: bool,
 ) -> Response:
     # Ignore other products using the same provider team; accept our signed sender or known ID.
     with DbSession(auth.engine) as db:
@@ -80,7 +98,6 @@ def apply_event(
     ours = sender == parseaddr(auth.settings.email_from)[1].lower()
     if not known and not ours:
         return Response(status_code=204)
-    suppress = kind in {"email.bounced", "email.complained", "email.suppressed"}
     emails = sorted({value.strip().lower() for value in recipients})
     if suppress:
         try:
