@@ -1,6 +1,6 @@
 # Account management
 
-Implemented locally; [verification evidence](../testing/account-management.md). Public release remains gated on infrastructure and independent recovery. All routes use `/api/v1`, HttpOnly session cookies, `Cache-Control: no-store` and expected `X-Aion-Account` owner UUID. No guest calendar API traffic. [OpenAPI](openapi.json) owns exact request schemas; [authentication](authentication-contract.md) owns shared code/session/budget rules.
+The public account service implements the routes below. Requests use `/api/v1`, an HttpOnly session cookie and the expected `X-Aion-Account` owner UUID. Responses use `Cache-Control: no-store`. Guest calendar use makes no account API requests. [OpenAPI](openapi.json) · [Authentication](authentication-contract.md) · [Local verification](../testing/account-management.md) · [Public release](../releases/web-accounts.md)
 
 | Route | Contract |
 | --- | --- |

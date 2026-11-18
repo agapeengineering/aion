@@ -1,6 +1,6 @@
 # ADR-0002: Optional account backend and same-origin EC2 deployment
 
-Status: **Accepted — implementation and migration pending**. Date: 2026-10-17. Owner: Agape Engineering. Applies to [R2 specification](../../requirements/backend-release-specification.md); not deployed.
+Agape Engineering accepted this decision on 17 October 2026. The account and sync deployment went live on 18 November 2026. [R2 specification](../../requirements/backend-release-specification.md) · [Account release](../../releases/web-accounts.md)
 
 ## Context
 
@@ -53,6 +53,6 @@ Record clean source/image digests, schema compatibility, configuration reference
 
 ## Status and revisit triggers
 
-This accepted ADR supersedes ADR-0001's static-only/no-account portions for R2 implementation. ADR-0001 continues to describe the deployed R1 release until the verified migration. Align repository instructions, current product/privacy docs, API contract, CI/tests and runbooks as R2 is implemented; preserve existing release records.
+ADR-0002 governs the account release. ADR-0001 documents the historical static guest deployment. Preserve each release record when updating product, API, verification and operations documentation.
 
-Revisit when measured resource contention, missed recovery/scheduling targets, email volume, authentication requirements or independent availability needs exceed this topology. The architecture decision was accepted on 2026-10-17; no implementation, provider configuration or migration evidence is asserted here.
+Revisit when measured resource contention, missed recovery or scheduling targets, email volume, authentication requirements or independent availability needs exceed this topology.

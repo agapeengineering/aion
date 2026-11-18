@@ -1,6 +1,6 @@
 # Profile sync contract
 
-Implemented in the local opt-in account build; public R1 remains unchanged. Covers FR-017–021 of the accepted [R2 specification](../requirements/backend-release-specification.md). Authentication uses the existing [session, Origin and CSRF controls](authentication-contract.md). The generated [OpenAPI contract](openapi.json) describes the implemented schema.
+The public account service implements FR-017–021. Authentication uses the session, Origin and CSRF controls defined in the authentication contract. [R2 specification](../requirements/backend-release-specification.md) · [Authentication](authentication-contract.md) · [OpenAPI](openapi.json) · [Public release](../releases/web-accounts.md)
 
 ## Routes and ownership
 

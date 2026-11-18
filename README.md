@@ -4,9 +4,9 @@
 
 A quiet life-in-weeks calendar. See the weeks behind you, the present week and the time ahead under a lifespan you choose.
 
-Free, open source and bilingual. In the current public release, your birth date and preferences stay in your browser. Accounts and cloud sync are not deployed. No advertising or product analytics.
+Use Aion for free in English or Spanish. As a guest, your calendar and PNG exports stay on your device. Sign in with an emailed code to save a calendar and sync it across devices. You choose whether to import an existing guest calendar. Aion is open source and has no advertising or product analytics.
 
-## Web 0.1.0
+## Web features
 
 - Two inputs: date of birth and chosen lifespan, with an editable 90-year default.
 - Lived/current/future week grid, accessible text summary and exact interval exploration.
@@ -14,11 +14,12 @@ Free, open source and bilingual. In the current public release, your birth date 
 - Ticking approximate countdown with pause/resume and optional hidden remaining figures.
 - Local save/edit/reset, clear storage-error states and local cross-tab updates.
 - Original English/Spanish phrases and local phone/desktop PNG wallpaper export.
+- Optional email-verified accounts, cross-device profile sync, session management, account export and permanent deletion.
 - Self-hosted fonts, a privacy explanation, source/license and public feedback route.
 
-A lifespan is a visualization assumption, never a prediction. Another browser/device starts fresh: enter the two details again. PNGs are static images applied manually; native widgets and automatic wallpaper updates are later work.
+A lifespan is a visualization assumption. Each new guest browser starts with an empty calendar. To use a saved account calendar on another device, sign in with the same email address. Apply exported PNGs manually as wallpapers.
 
-This is an early release. Chromium, Firefox and WebKit journeys are automated; physical iPhone/Safari, VoiceOver and the product-owner walkthrough remain explicit validation work. See [release notes](docs/releases/0.1.0.md) and [verification limits](docs/testing/web-verification.md).
+The public account release was checked in Chromium, Firefox and WebKit. Physical-device and screen-reader verification have separate coverage. [Account release notes](docs/releases/web-accounts.md) · [Verification limits](docs/testing/web-verification.md)
 
 ## Run locally
 
@@ -39,18 +40,20 @@ pnpm test:e2e
 
 See [development setup](docs/development/setup.md) for CI, offline-after-load limits and deployment checks.
 
-## Backend foundation
+## Accounts and local development
 
-The local FastAPI/PostgreSQL backend includes explicit migrations, email-code signup/login, secure cookie sessions and an encrypted verification-mail queue. An opt-in EN/ES account UI and local Mailpit inbox allow end-to-end testing over HTTPS. See [account setup](docs/development/account-setup.md), [authentication contract](docs/api/authentication-contract.md) and [verification](docs/testing/email-code-auth.md). The local account preview now includes explicit profile import, cross-device sync, offline edits, revision conflicts and account-calendar reset. See the [sync contract](docs/api/profile-contract.md) and [verification evidence](docs/testing/profile-sync.md). Opt-in reminders are implemented locally; see [reminder setup](docs/development/reminders-setup.md) and [phrase publication](docs/content/phrase-bank.md). Reflections are deferred while the phrase collection is curated: settings are hidden by default and real reminder sending remains disabled. [Account management](docs/api/account-management-contract.md) adds session controls, fresh email confirmation, export and deletion locally. Public accounts still require deployment and recovery evidence. An [opt-in Resend adapter](docs/development/resend-setup.md) supports controlled allowlisted email tests; default capture remains local. No cloud/email provider configuration is changed.
+FastAPI and PostgreSQL serve the same-origin account API. A worker delivers sign-in and account-confirmation codes. Local development uses Mailpit to capture messages. [Account setup](docs/development/account-setup.md) · [Authentication](docs/api/authentication-contract.md) · [Email delivery setup](docs/development/resend-setup.md)
+
+Account profiles support explicit import, offline edits, conflict resolution and reset. Export and permanent deletion require a fresh email confirmation. Scheduled email reflections are deferred. [Profile sync](docs/api/profile-contract.md) · [Account management](docs/api/account-management-contract.md) · [Reminder scope](docs/api/reminder-contract.md)
 
 ## Documentation
 
 - [R1 specification](docs/requirements/web-release-specification.md)
-- [Accepted R2 specification: accounts, sync and reminders](docs/requirements/backend-release-specification.md) · [backend decision](docs/architecture/decisions/0002-optional-account-backend.md) — implementation in progress; current web release remains local-only
+- [R2 specification for accounts, sync and reminders](docs/requirements/backend-release-specification.md) · [Backend decision](docs/architecture/decisions/0002-optional-account-backend.md)
 - [Calendar/clock contract](docs/requirements/calendar-clock-contract.md) · [shared fixture audit](docs/testing/calendar-clock-fixtures.md)
 - [Architecture](docs/architecture/overview.md) · [static hosting decision](docs/architecture/decisions/0001-static-web-release.md)
 - [Database diagrams and phrase-bank ownership](docs/architecture/database.md) · [generated implemented schema](docs/architecture/database-schema.md) · [generation/check commands](docs/development/database-documentation.md)
-- [Deploy/rollback/recovery](docs/operations/web-deployment.md)
+- [Account deployment and rollback](docs/operations/account-deployment.md) · [Database recovery](docs/operations/backend-recovery.md)
 - [Backend setup](docs/development/backend-setup.md) · [foundation verification](docs/testing/backend-foundation.md) · [implemented API](docs/api/openapi.json)
 - [Product overview](docs/product/README.md) · [interface study/review](docs/design/interface-review.md)
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)

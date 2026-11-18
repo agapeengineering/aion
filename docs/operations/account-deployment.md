@@ -1,6 +1,6 @@
 # Account service deployment and recovery
 
-Use the same reviewed ARM64 image archive for rehearsal and promotion. Verify the archive checksum, the manifest's image identifiers and the source revision served at `/version.json`. The account service requires its own Compose project, private state directory, database volume, recovery journal epoch and off-host storage prefixes. Keep the guest Worker attached until the release owner approves promotion.
+For the active public deployment, see the [account release record](../releases/web-accounts.md). Use the same reviewed ARM64 image archive for rehearsal and promotion. Verify the checksum, manifest image identifiers and source revision served at `/version.json`. Keep the account service in its own Compose project with private state, a database volume, a recovery journal epoch and off-host storage prefixes. Preserve the guest Worker artifact for maintenance fallback.
 
 ## Prepare the private origin
 

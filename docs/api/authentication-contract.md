@@ -1,8 +1,8 @@
 # Authentication contract
 
-Status: **signup/login implemented locally behind explicit flags; not deployed or human-approved UI**. Session-bound reverification, session controls, export and deletion are implemented locally; see [account management](account-management-contract.md). Baseline: accepted R2 FR-014–016/026, NFR-008/014. Date: 2026-10-17.
+The public web account release includes signup, login, session-bound reverification, session controls, export and deletion. Development enables these features explicitly. The R2 baseline covers FR-014–016/026 and NFR-008/014. [Account management](account-management-contract.md) · [Public release](../releases/web-accounts.md)
 
-The [OpenAPI export](openapi.json) is generated exclusively from FastAPI. Implemented routes: health, POST `/auth/challenges` (login purpose only), POST `/auth/verify`, GET `/me`, GET `/auth/csrf`, POST `/auth/logout`, and the [account-management routes](account-management-contract.md). All use the `/api/v1` prefix. The examples below distinguish implemented login from planned lifecycle operations. See [local setup](../development/account-setup.md) and [verification evidence](../testing/email-code-auth.md).
+All routes use `/api/v1`. FastAPI generates the OpenAPI document for the implemented health, authentication, session and account-management routes. [OpenAPI](openapi.json) · [Local setup](../development/account-setup.md) · [Authentication verification](../testing/email-code-auth.md)
 
 ## Browser journey and identity
 
@@ -54,15 +54,15 @@ Authenticated writes require exact Origin plus a session-bound anti-CSRF nonce i
 
 Expect 401 for missing/expired/revoked auth, 403 for CSRF/origin/reverification failure, 422 for invalid fields, 429 for limits and 503 for temporary failure. Login challenge endpoints, signature-verified webhooks and scoped unsubscribe capabilities have narrowly documented authentication exceptions. Do not add blanket CORS, shared-domain cookies, debug tracebacks, request-body logging or public interactive API docs.
 
-## Verification and remaining release gates
+## Verification
 
 Use real PostgreSQL and two synthetic users. Cover concurrent/replayed/expired/bound challenges; persistent resend/guess limits; session fixation, idle/absolute expiry, CSRF and Origin; cross-user access/revocation; recent re-verification; cache clearing/sign-out; import not automatic; outbox crash/expiry/uncertain send; privacy and retention/deletion. Only controlled allowlisted provider smoke after local/CI checks; no real sending is needed to review this contract.
 
-Reverification, session listing/revocation management, export and account deletion are available locally. Public release still requires deployment, privacy and independent recovery evidence. Native token/redirect flows, password recovery and account merging remain outside this browser contract.
+The public release includes reverification, session listing and revocation, export and account deletion. Native token flows, password recovery and account merging remain outside this browser contract. [Deployment and recovery evidence](../releases/web-accounts.md)
 
 ## Implemented rate-window and retention details
 
-Send/verify counters use atomic fixed UTC hourly windows with keyed email/IP identifiers; this is not a sliding-window guarantee. Resend cooldown and per-challenge attempt limits apply independently. Cleanup purges pending expired sealed payloads, removes challenges 24 hours after expiry, removes expired/revoked sessions after seven days and removes expired rate buckets. Authentication is disabled by default. Public enablement still requires trusted proxy/IP configuration, restricted runtime database grants, provider delivery/retry evidence and complete R2 lifecycle/privacy/recovery gates.
+Send and verification counters use atomic, fixed UTC hourly windows with keyed email and IP identifiers. Resend cooldowns and per-challenge attempt limits apply independently. Cleanup purges expired sealed payloads and rate buckets, removes challenges 24 hours after expiry and removes expired or revoked sessions after seven days. Development defaults authentication to disabled. Production uses the trusted proxy, restricted database grants and recovery journal described in the account deployment runbook. [Deployment procedure](../operations/account-deployment.md)
 
 
 Account lifecycle follow-up: logout and explicit session revocation acquire the per-email dispatch barrier, invalidate queued session-bound confirmation challenges and purge their sealed payloads transactionally. Logout clears both host cookies. Original revocation timestamps are preserved on repeated requests. The web sync controller coordinates credential rotation and terminal actions; see the [account management contract](account-management-contract.md).
