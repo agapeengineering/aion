@@ -1,5 +1,5 @@
 # Use with compose.yaml and compose.journal.yaml, under a dedicated aion-production project.
-# The shared TLS proxy joins only the private frontend network at the address trusted below.
+# The dedicated Aion origin proxy joins the private frontend at the address trusted below.
 x-production-mail: &production-mail
   AION_AUTH_ENABLED: "true"
   AION_AUTH_ORIGIN: ${AION_ACCOUNT_ORIGIN:-https://aion.agape.engineering}
