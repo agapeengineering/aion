@@ -1,9 +1,50 @@
+import os
+import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
 
 from aion import worker
+
+
+@pytest.mark.parametrize("age,exit_code", [(0, 0), (60, 1), (-60, 1), (None, 1)])
+def test_heartbeat_probe_runs_without_backend_dependencies(
+    tmp_path: Path, age: int | None, exit_code: int
+) -> None:
+    heartbeat = tmp_path / "heartbeat"
+    if age is not None:
+        heartbeat.touch()
+        stamp = time.time() - age
+        os.utime(heartbeat, (stamp, stamp))
+    source = Path(__file__).resolve().parents[1] / "src"
+    script = """
+import sys
+from pathlib import Path
+
+sys.path.insert(0, sys.argv[1])
+from aion import check
+
+check.HEARTBEAT = Path(sys.argv[2])
+sys.argv = ["aion.check", "worker"]
+raise SystemExit(check.main())
+"""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-S",
+            "-c",
+            script,
+            str(source),
+            str(heartbeat),
+        ],
+        capture_output=True,
+        timeout=3,
+        check=False,
+    )
+    assert result.returncode == exit_code
 
 
 @pytest.mark.parametrize("available,exit_code", [(True, 0), (False, 1)])

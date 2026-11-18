@@ -4,27 +4,17 @@ import argparse
 import logging
 import signal
 import threading
-import time
-from pathlib import Path
 
 from sqlalchemy.exc import SQLAlchemyError
 
 from aion.auth import AuthService, utc_now
+from aion.check import HEARTBEAT
+from aion.check import heartbeat_fresh as heartbeat_fresh
 from aion.config import Settings
 from aion.database import is_ready, make_engine
 from aion.reminder_delivery import deliver_reminders, schedule_due
 from aion.resend_mail import ResendSender
 from aion.verification_mail import LocalCapture, Sender, cleanup_expired, deliver_pending
-
-HEARTBEAT = Path("/tmp/aion-worker-heartbeat")
-
-
-def heartbeat_fresh() -> bool:
-    try:
-        age = time.time() - HEARTBEAT.stat().st_mtime
-        return 0 <= age < 45
-    except OSError:
-        return False
 
 
 def main() -> int:
