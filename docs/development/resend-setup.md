@@ -105,3 +105,5 @@ The [verification email design](../design/verification-email.md) documents the E
 
 
 Account confirmation uses the same sealed queue, sender, support Reply-To, recipient allowlist, budgets and idempotent provider adapter as login, with a distinct EN/ES purpose/template. No extra provider account/key is needed. Reflections remain deferred. Before **public account login** (independently of reminders), configure a reachable signature-verified webhook and verify suppression on bounce/complaint; API/worker configuration and provider callback reachability must be reviewed together. Local allowlisted sign-in success alone does not prove that production lifecycle.
+
+On the Free, Pro and Scale plans, Resend publishes a 30-day retention period for sent messages and logs. Account deletion in Aion does not recall mail already delivered. The operator can request early removal of individual sent messages through Resend support using the provider message IDs. [Provider retention and deletion](https://resend.com/security/gdpr/)
