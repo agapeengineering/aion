@@ -1,0 +1,6 @@
+[Unit]
+Description=Report Aion staging recovery job failure
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/logger -p daemon.err -t aion-staging-recovery "Recovery job failed: %I. Check the unit journal."

@@ -1,10 +1,20 @@
 """Container-local health checks; no credential or response body output."""
 
 import sys
+import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
-from aion.worker import heartbeat_fresh
+HEARTBEAT = Path("/tmp/aion-worker-heartbeat")
+
+
+def heartbeat_fresh() -> bool:
+    try:
+        age = time.time() - HEARTBEAT.stat().st_mtime
+        return 0 <= age < 45
+    except OSError:
+        return False
 
 
 def main() -> int:

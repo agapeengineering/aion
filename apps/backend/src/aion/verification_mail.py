@@ -16,6 +16,7 @@ from sqlalchemy import Connection, Engine, case, delete, select, text, update
 from sqlalchemy.orm import Session as DbSession
 
 from aion.auth import AuthKeys
+from aion.mail_budget import next_window, reserve
 from aion.mail_content import verification_content, verification_html
 from aion.models import (
     EmailChallenge,
@@ -118,7 +119,9 @@ def delivery_lock(engine: Engine, keys: AuthKeys, email: str) -> Iterator[Connec
                 raise
 
 
-def deliver_pending(engine: Engine, keys: AuthKeys, sender: Sender, now: datetime) -> int:
+def deliver_pending(
+    engine: Engine, keys: AuthKeys, sender: Sender, now: datetime, *, daily_limit: int | None = None
+) -> int:
     sent = 0
     started = time.monotonic()
     with DbSession(engine) as db:
@@ -178,6 +181,13 @@ def deliver_pending(engine: Engine, keys: AuthKeys, sender: Sender, now: datetim
                     continue
                 if job.attempts >= 6:
                     terminal(job, "failed")
+                    continue
+                if daily_limit is not None and not reserve(db, dispatch_now, daily_limit):
+                    due = next_window(dispatch_now)
+                    if due >= job.expires_at:
+                        terminal(job, "cancelled")
+                    else:
+                        job.next_attempt_at = due
                     continue
                 prior_unknown = job.acceptance_unknown
                 job.attempts += 1

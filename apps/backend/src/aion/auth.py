@@ -21,8 +21,11 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session as DbSession
 
 from aion.config import Settings
+from aion.mail_budget import full as mail_budget_full
+from aion.mail_budget import next_window
 from aion.mail_content import verification_payload
 from aion.models import EmailChallenge, Profile, RateLimitBucket, Session, User, VerificationMail
+from aion.recovery_journal import RecoveryJournal
 from aion.session_revocation import revoke
 
 SESSION_COOKIE = "__Host-aion_session"
@@ -41,7 +44,9 @@ class AuthKeys:
         try:
             if settings.auth_secrets_file is None:
                 raise ValueError
-            value = json.loads(settings.auth_secrets_file.read_text())
+            key_bytes = settings.auth_secrets_file.read_bytes()
+            value = json.loads(key_bytes)
+            self.fingerprint = hashlib.sha256(key_bytes).hexdigest()
             self.mac = base64.urlsafe_b64decode(value["mac"])
             self.csrf = base64.urlsafe_b64decode(value["csrf"])
             if len(self.mac) != 32 or len(self.csrf) != 32 or self.mac == self.csrf:
@@ -66,6 +71,18 @@ def token_digest(value: str) -> bytes:
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+def canonical_email(value: str) -> str:
+    address = validate_email(
+        value.strip(),
+        check_deliverability=False,
+        allow_smtputf8=False,
+        test_environment=True,
+    ).ascii_email
+    if address is None:
+        raise EmailNotValidError("Unsupported address")
+    return address.lower()
 
 
 def lock_email(db: DbSession, email: str, keys: AuthKeys) -> None:
@@ -145,6 +162,16 @@ class AuthService:
         self.engine = engine
         self.origin = settings.auth_origin
         self.keys = AuthKeys(settings)
+        self.journal = (
+            RecoveryJournal(
+                settings.recovery_journal_socket,
+                settings.recovery_journal_epoch,
+                self.keys.fingerprint,
+            )
+            if settings.recovery_journal_socket is not None
+            and settings.recovery_journal_epoch is not None
+            else None
+        )
         self.clock: Callable[[], datetime] = utc_now
 
     def check_origin(self, request: Request) -> None:
@@ -156,21 +183,14 @@ class AuthService:
     ) -> tuple[uuid.UUID, str]:
         self.check_origin(request)
         try:
-            address = validate_email(
-                value.email.strip(),
-                check_deliverability=False,
-                allow_smtputf8=False,
-                test_environment=True,
-            ).ascii_email
-            if address is None:
-                raise EmailNotValidError("Unsupported address")
-            email = address.lower()
+            email = canonical_email(value.email)
         except EmailNotValidError:
             raise AuthError(422, "invalid_email") from None
-        if self.settings.resend_enabled and email not in self.settings.resend_allowed_recipients:
+        if self.settings.resend_enabled and not self.settings.resend_recipient_allowed(email):
             raise AuthError(422, "email_not_allowed")
         purpose = "reverify" if reverify else "login"
         now = self.clock()
+        daily_limit = self.settings.resend_daily_limit if self.settings.resend_enabled else None
         error: AuthError | None = None
         challenge_id, browser = uuid.uuid4(), secrets.token_urlsafe(32)
         ip = request.client.host if request.client else "unknown"
@@ -205,6 +225,9 @@ class AuthService:
                     error = AuthError(429, "rate_limited", cooldown)
                 elif not budget(db, self.keys, "send_email", email, 3, now):
                     error = AuthError(429, "rate_limited", 3600)
+                elif daily_limit is not None and mail_budget_full(db, now, daily_limit):
+                    retry_after = max(1, int((next_window(now) - now).total_seconds()))
+                    error = AuthError(429, "rate_limited", retry_after)
                 else:
                     old_ids = select(EmailChallenge.id).where(
                         EmailChallenge.email == email, EmailChallenge.purpose == purpose

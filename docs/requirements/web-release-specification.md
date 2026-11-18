@@ -4,7 +4,7 @@ Version: **1.2.0**. Status: reviewed R1 scope/behavior implemented for early web
 
 This document is the authoritative discovery brief, product definition, requirements and verification map for the first web release. See the [product overview](../product/README.md) and [architecture overview](../architecture/overview.md). Acceptance targets describe intended behavior, not measured results or shipped features.
 
-**Accepted next release:** the [R2 backend amendment](backend-release-specification.md) v1.0.0 was accepted on 2026-10-17 for optional verified accounts, settings sync and opt-in email reminders. Its override map governs R2 implementation. R1 remains deployed; acceptance does not retroactively change its behavior or historical release evidence.
+The R2 amendment governs the subsequent release of optional verified accounts and settings sync. Scheduled email reminders remain deferred. This document preserves the original R1 behavior and acceptance evidence. [R2 specification](backend-release-specification.md) · [Account release](../releases/web-accounts.md)
 
 ## Problem and product rationale
 

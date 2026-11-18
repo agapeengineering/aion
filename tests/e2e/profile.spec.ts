@@ -1,23 +1,40 @@
 import { test, expect, type Page, type APIRequestContext } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { randomUUID } from 'node:crypto';
 
 test.skip(process.env.AION_AUTH_TESTS !== '1', 'Requires the capture-only HTTPS stack.');
 test.use({ ignoreHTTPSErrors: true, trace: 'off', screenshot: 'off', video: 'off' });
 const inbox = process.env.AION_INBOX_URL ?? 'http://127.0.0.1:18025';
 
+function waitForAuthPost(page: Page, endpoint: string) {
+  return page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === `/api/v1/auth/${endpoint}` &&
+      response.request().method() === 'POST',
+  );
+}
+
 async function login(page: Page, request: APIRequestContext, es: boolean) {
-  const email = `sync-${es ? 'es' : 'en'}-${Date.now()}@example.test`;
+  const email = `sync-${es ? 'es' : 'en'}-${randomUUID()}@example.test`;
   await page.getByRole('link', { name: es ? 'Cuenta' : 'Account', exact: true }).click();
   await page.getByLabel(es ? 'Correo electrónico' : 'Email address', { exact: true }).fill(email);
-  await page
-    .getByRole('button', { name: es ? 'Enviar un código' : 'Send a code', exact: true })
-    .click();
+  const [accepted] = await Promise.all([
+    waitForAuthPost(page, 'challenges'),
+    page
+      .getByRole('button', { name: es ? 'Enviar un código' : 'Send a code', exact: true })
+      .click(),
+  ]);
+  expect(accepted.status(), 'request a verification code').toBe(202);
+  const codeInput = page.getByLabel(es ? 'Código de verificación' : 'Verification code', {
+    exact: true,
+  });
+  await expect(codeInput).toBeFocused();
   let code = '';
   await expect
     .poll(
       async () => {
         const messages = await (await request.get(`${inbox}/api/v1/messages`)).json();
-        const mail = messages.messages.find((m: { To: { Address: string }[] }) =>
+        const mail = (messages.messages ?? []).find((m: { To: { Address: string }[] }) =>
           m.To.some((t) => t.Address === email),
         );
         if (!mail) return false;
@@ -28,12 +45,15 @@ async function login(page: Page, request: APIRequestContext, es: boolean) {
       { timeout: 20000 },
     )
     .toBe(true);
-  await page
-    .getByLabel(es ? 'Código de verificación' : 'Verification code', { exact: true })
-    .fill(code);
-  await page
-    .getByRole('button', { name: es ? 'Verificar correo' : 'Verify email', exact: true })
-    .click();
+  await codeInput.fill(code);
+  const [verified] = await Promise.all([
+    waitForAuthPost(page, 'verify'),
+    page
+      .getByRole('button', { name: es ? 'Verificar correo' : 'Verify email', exact: true })
+      .click(),
+  ]);
+  expect(verified.status(), 'verify the captured code').toBe(200);
+  await expect(page).toHaveURL(new URL(es ? '/es/account' : '/account', page.url()).href);
   await expect(page.getByRole('status')).toContainText(email);
 }
 for (const es of [false, true]) {
@@ -251,10 +271,18 @@ for (const es of [false, true]) {
       await refresh(other);
       await expect(other.getByLabel(birth, { exact: true })).toBeVisible();
       await page.getByRole('link', { name: es ? 'Cuenta' : 'Account', exact: true }).click();
-      await page
-        .getByRole('button', { name: es ? 'Cerrar sesión' : 'Sign out', exact: true })
-        .click();
+      const [logout] = await Promise.all([
+        waitForAuthPost(page, 'logout'),
+        page.getByRole('button', { name: es ? 'Cerrar sesión' : 'Sign out', exact: true }).click(),
+      ]);
+      expect(logout.status(), 'logout completed').toBe(204);
+      expect((await otherContext.request.get('/api/v1/me')).status()).toBe(401);
+      await expect(page).toHaveURL(new URL(es ? '/es/login' : '/login', page.url()).href);
+      await expect(
+        page.getByLabel(es ? 'Correo electrónico' : 'Email address', { exact: true }),
+      ).toBeVisible();
       await close(page);
+      await expect(page).toHaveURL(new URL(es ? '/es' : '/', page.url()).href);
       await expect(page.getByTestId('lived-weeks')).toBeVisible();
       expect(await page.evaluate(() => localStorage.getItem('aion:settings'))).toBe(originalGuest);
       expect(

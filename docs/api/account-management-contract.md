@@ -1,6 +1,6 @@
 # Account management
 
-Implemented locally; [verification evidence](../testing/account-management.md). Public release remains gated on infrastructure and independent recovery. All routes use `/api/v1`, HttpOnly session cookies, `Cache-Control: no-store` and expected `X-Aion-Account` owner UUID. No guest calendar API traffic. [OpenAPI](openapi.json) owns exact request schemas; [authentication](authentication-contract.md) owns shared code/session/budget rules.
+The public account service implements the routes below. Requests use `/api/v1`, an HttpOnly session cookie and the expected `X-Aion-Account` owner UUID. Responses use `Cache-Control: no-store`. Guest calendar use makes no account API requests. [OpenAPI](openapi.json) · [Authentication](authentication-contract.md) · [Local verification](../testing/account-management.md) · [Public release](../releases/web-accounts.md)
 
 | Route | Contract |
 | --- | --- |
@@ -24,7 +24,7 @@ The web page preserves its separate guest calendar, clears its account cache and
 
 ## Recovery boundary
 
-Migration `0006_account_lifecycle` adds the session binding and `deletion_ledger`: old account UUID, keyed email marker and deletion timestamp, with **no user FK**. This local table alone is not independent recovery. Before public launch, copy deletion/suppression markers to protected off-instance storage and rehearse restoring backups with sends/traffic disabled, reconciling deleted UUIDs, preserving suppression, invalidating restored sessions/challenges/jobs, and only then admitting traffic. A restored ledger on the same host is insufficient. These operational procedures remain in the deployment/recovery slice; do not claim a local deletion test proves backup-erasure or production restore readiness.
+Migration `0006_account_lifecycle` adds session binding and `deletion_ledger` with the old account UUID, keyed email marker and deletion timestamp. With the public recovery journal configured, deletion commits only after the API receives durable off-instance acknowledgement. A failed or uncertain append rolls back the database operation and returns `503 recovery_unavailable`. Recovery replays independently recorded authorized intent even if the response or database commit failed. Follow the [recovery procedure](../operations/backend-recovery.md#write-ahead-journal-for-account-host-loss) before admitting traffic or starting mail delivery after a restore.
 
 ## Coordinated browser transitions
 

@@ -944,20 +944,36 @@ export function App() {
           onClose={() => setModal(null)}
         >
           <div className="privacy-copy">
+            {accountsEnabled ? (
+              <>
+                {c.accountPrivacy.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+                {import.meta.env.VITE_AION_REMINDERS === '1' && <p>{c.reminderPrivacy}</p>}
+                <p>
+                  {c.privacyContact}{' '}
+                  <a href="mailto:support@agape.engineering">support@agape.engineering</a>.
+                </p>
+              </>
+            ) : (
+              <p>{c.privacyBody}</p>
+            )}
             <p>
-              {accountsEnabled
-                ? language === 'en'
-                  ? 'Guest settings and PNG generation stay on this device. Optional sign-in sends your email and code to the account service. Saving to your account sends your birth date, chosen lifespan and preferences for cross-device sync. Your guest calendar is preserved separately. Account settings and pending edits may be cached on this device for offline use. Signing out revokes this session and clears its account cache, with confirmation before discarding pending changes. Remote revocation cannot erase an offline device until it reconnects. Email reminders require separate consent, use saved account settings, and share message content with Resend. Signing out does not unsubscribe; reminder emails include an unsubscribe link. Guest use makes no account requests. No advertising or product analytics.'
-                  : 'Los ajustes locales y las imágenes siguen en este dispositivo. Iniciar sesión envía tu correo y código al servicio de cuentas. Guardar en la cuenta envía tu fecha de nacimiento, horizonte y preferencias para sincronizarlos. El calendario local se conserva por separado. Los ajustes de cuenta y cambios pendientes pueden guardarse en caché para usarlos sin conexión. Cerrar sesión revoca la sesión y borra su caché, con confirmación para descartar cambios pendientes. Una revocación remota no borra un dispositivo desconectado hasta que vuelva a conectarse. Los recordatorios requieren consentimiento aparte, usan los ajustes guardados y comparten el contenido con Resend. Cerrar sesión no cancela la suscripción; los correos incluyen un enlace para cancelarla. El modo local no consulta la cuenta. Sin publicidad ni analítica.'
-                : c.privacyBody}
-            </p>
-            <p>
-              {c.privacyHost}{' '}
+              {accountsEnabled ? c.providerPolicies : c.privacyHost}{' '}
               <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer">
                 Cloudflare ↗
               </a>
+              {accountsEnabled && (
+                <>
+                  {' '}
+                  ·{' '}
+                  <a href="https://resend.com/security/gdpr/" target="_blank" rel="noreferrer">
+                    Resend ↗
+                  </a>
+                </>
+              )}
             </p>
-            <p>{c.privacyReset}</p>
+            {!accountsEnabled && <p>{c.privacyReset}</p>}
             <p>{c.support}</p>
             <p>
               <a

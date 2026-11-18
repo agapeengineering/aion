@@ -1,6 +1,6 @@
-# Web deployment, rollback and recovery
+# Guest Worker deployment and recovery (R1)
 
-Maintainer: Agape Engineering. Channel: early web 0.1.x. Static assets only; there is no server-side user database or personal-data backup.
+This is the historical runbook for the static guest Worker. The public account release runs the web, API and worker on EC2. Use the account deployment runbook for production changes and its maintenance procedure before restoring a guest frontend. [Current account deployment](account-deployment.md) · [Account release record](../releases/web-accounts.md)
 
 ## Deploy
 
@@ -8,7 +8,7 @@ Maintainer: Agape Engineering. Channel: early web 0.1.x. Static assets only; the
 2. From a clean checkout run `pnpm install --frozen-lockfile`, `pnpm check`, `pnpm test:e2e`, and `pnpm audit --prod`. Review public source, dependency notices and deployment authorization.
 3. Run `pnpm deploy:dry`; check `apps/web/dist/version.json` records the intended revision with `dirty:false`.
 4. Run `pnpm deploy:staging`, record the Worker version ID, and run `AION_BASE_URL=https://aion-staging.jorgesandev.workers.dev pnpm test:e2e`. Verify EN/ES, headers and source metadata. This only uses synthetic local browser data.
-5. Promote the **same unchanged built directory** using `pnpm deploy`. This deploys the production environment and custom domain `aion.agape.engineering`. Do not rebuild between stage and production promotion.
+5. For an authorized guest Worker release, promote the **same unchanged built directory** with `pnpm deploy`. This command targets the production custom domain `aion.agape.engineering`. For an account-service fallback, fence account writes and mail first and preserve the production database and journal. [Account deployment and rollback](account-deployment.md)
 6. Verify HTTPS, `/`, `/es`, `/version.json`, setup/edit/reload/reset, hidden-figure PNG export and privacy/network behavior at the actual URL. Record artifact/source revision, deployment version and known limitations in the release record.
 
 The initial production release has no previous production Aion version. If no safe previous version exists, contain/repair rather than claiming an available rollback target. Do not edit unrelated services/domains to recover this app.

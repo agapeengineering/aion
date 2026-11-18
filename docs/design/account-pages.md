@@ -1,6 +1,6 @@
 # Dedicated login and account pages
 
-Navigation update accepted 2026-10-18. Implemented locally in the opt-in account build; public R1 is unchanged. Passwordless email-code authentication and the [profile sync contract](../api/profile-contract.md) remain unchanged.
+The account navigation design was accepted on 18 October 2026 and shipped with the public web account release. It uses passwordless email-code authentication and the existing profile sync contract. [Profile sync](../api/profile-contract.md) · [Account release](../releases/web-accounts.md)
 
 | English | Spanish | Purpose |
 | --- | --- | --- |

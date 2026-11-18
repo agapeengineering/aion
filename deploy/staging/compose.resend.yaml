@@ -1,0 +1,31 @@
+# Layer after compose.yaml and compose.journal.yaml for an approved delivery test.
+# Public account delivery also needs its reviewed ingress and signed-callback configuration.
+x-resend: &resend
+  env_file: ${AION_RESEND_SETTINGS_FILE:?Set the private sender and recipient settings file}
+  environment:
+    AION_LOCAL_MAIL_CAPTURE: "false"
+    AION_RESEND_ENABLED: "true"
+    AION_RESEND_PUBLIC_ACCOUNTS: "false"
+    AION_REMINDERS_ENABLED: "false"
+
+services:
+  api:
+    <<: *resend
+
+  worker:
+    <<: *resend
+    environment:
+      AION_LOCAL_MAIL_CAPTURE: "false"
+      AION_RESEND_ENABLED: "true"
+      AION_RESEND_PUBLIC_ACCOUNTS: "false"
+      AION_REMINDERS_ENABLED: "false"
+      AION_RESEND_API_KEY_FILE: /run/secrets/resend_api_key
+    secrets: [resend_api_key]
+    networks: [delivery]
+
+networks:
+  delivery: {}
+
+secrets:
+  resend_api_key:
+    file: ${AION_RESEND_WORKER_KEY_FILE:?Set the sending-only worker credential file}

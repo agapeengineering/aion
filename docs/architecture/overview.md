@@ -1,16 +1,16 @@
 # Architecture overview
 
-Aion's deployed R1 web release is a client-only React/TypeScript/Vite application. See [ADR-0001](decisions/0001-static-web-release.md), the [R1 specification](../requirements/web-release-specification.md) and [calendar/clock contract](../requirements/calendar-clock-contract.md).
+Aion serves a bilingual React/TypeScript/Vite calendar and an optional same-origin account API. Guests use the calendar entirely on their device. The original guest-only release is documented in [ADR-0001](decisions/0001-static-web-release.md) and the [R1 specification](../requirements/web-release-specification.md).
 
-The [accepted R2 specification](../requirements/backend-release-specification.md) and [ADR-0002](decisions/0002-optional-account-backend.md) define the next implementation: optional accounts, sync and email through a containerized FastAPI/PostgreSQL/worker backend. The module and deployment descriptions below remain the actual R1 state until implementation evidence replaces them.
+The public account release runs FastAPI, PostgreSQL, the mail worker and the static web server on EC2. Cloudflare Tunnel forwards traffic to an Aion-specific origin proxy. [R2 specification](../requirements/backend-release-specification.md) · [Deployment decision](decisions/0002-optional-account-backend.md) · [Release evidence](../releases/web-accounts.md)
 
-## Local R2 foundation
+## Account services
 
-See the [database diagrams and data ownership map](database.md) for actual foundation tables, implemented sync and planned reminder entities and the source-controlled phrase bank.
+PostgreSQL holds verified identities, sessions, account profiles, mail jobs and deletion records. The schema and the source-controlled phrase bank have separate owners. [Database diagrams and data ownership](database.md)
 
-`apps/backend/src/aion` now provides validated explicit database configuration, typed initial identity models, migration-aware liveness/readiness endpoints and a probe/heartbeat worker. Explicit Alembic migration `0001_identity` creates users, sessions, email challenges and persistent abuse-counter tables; table existence does not implement auth. The opt-in signup/login slice adds identity/session routes, browser-bound codes and sealed verification mail in migration `0002_verification`. The worker defaults to local capture and supports [controlled allowlisted Resend delivery](../development/resend-setup.md); Migration `0004_profiles` adds owned, revisioned profile reads/writes/reset and idempotency metadata; reminders and other account lifecycle routes remain planned. API/worker/migrate share one non-root image; local Compose adds private Postgres and a static web/proxy container with explicit loopback ports only in its local override.
+`apps/backend/src/aion` implements browser-bound verification codes, secure sessions, revisioned profile writes and account management. The API, migration task and worker use the same non-root image. Local development captures test mail in Mailpit. The production worker uses Resend for transactional email. Scheduled reflections are disabled. [Authentication](../api/authentication-contract.md) · [Account management](../api/account-management-contract.md) · [Mail setup](../development/resend-setup.md)
 
-[Backend setup](../development/backend-setup.md) supplies commands and development limits. [Generated OpenAPI](../api/openapi.json) describes only implemented routes; [authentication contract](../api/authentication-contract.md), [security choices](backend-security-components.md) and the [account study](../design/account-flow.html) document the account slice. See [local account setup](../development/account-setup.md) and [signup/login evidence](../testing/email-code-auth.md). [Foundation verification](../testing/backend-foundation.md) distinguishes actual local checks from pending hosted CI, user review, authentication and production recovery. The live R1 deployment remains unchanged.
+The OpenAPI document is generated from implemented routes. Local checks and public release evidence are recorded separately. [OpenAPI](../api/openapi.json) · [Local backend setup](../development/backend-setup.md) · [Security choices](backend-security-components.md) · [Local verification](../testing/backend-foundation.md)
 
 ## Modules and data flow
 
@@ -21,13 +21,13 @@ See the [database diagrams and data ownership map](database.md) for actual found
 - `apps/web/src/export.ts`: one coherent live snapshot into a local phone/desktop PNG, honoring hidden remaining figures and omitting birth date.
 - `apps/web/src/i18n.ts`: EN/ES content and original phrase bank; self-hosted font assets are bundled at build time.
 
-In the deployed R1 build there is no backend/API/authentication/cloud sync, queue, analytics or server-side personal data. The separately enabled local account preview stores verified email and sessions; calendar data stays local until explicit account saving; account caches are separate from guest settings. See the [profile contract](../api/profile-contract.md). The only initial requests are static assets. Settings and malformed/unknown storage are untrusted; validate before use, protect unsupported versions and use session-only fallback when saving is denied. Reset removes only the app-owned setting key; downloaded images remain user-controlled.
+Guest settings and PNG generation stay in the browser. Account navigation initiates authentication requests. A profile is uploaded only after the user chooses to save or import it. Account caches are scoped to the verified owner and kept separate from guest settings. Storage validation protects unsupported formats and permits session-only use when saving is denied. [Profile contract](../api/profile-contract.md) · [Calendar and clock](../requirements/calendar-clock-contract.md)
 
 ## Build and delivery
 
-One pnpm product workspace; native clients are added only when scheduled and retain separate artifacts. Pinned Node/pnpm/dependencies and the lockfile make setup reproducible. GitHub Actions runs fixture/type/unit/build/browser checks with read-only repository access. Publication is a separate authorized Wrangler action; CI has no deployment credentials.
+The pnpm workspace pins the web toolchain and dependencies. GitHub Actions runs web and backend checks with read-only repository access. Production promotion uses the exact reviewed container archive.
 
-Cloudflare serves the static build with HTTPS, a restrictive CSP, no-referrer and nosniff headers. English and Spanish entry documents have appropriate language/title metadata. `version.json` identifies source revision/build cleanliness. Stage and promote the same built directory; see the [operations runbook](../operations/web-deployment.md) and [verification record](../testing/web-verification.md).
+The origin proxy routes `/api` and its descendants to FastAPI and all other paths to the web container. API responses are uncached. The web serves a restrictive CSP, EN/ES entry documents and `version.json` with the built source revision. [Deployment runbook](../operations/account-deployment.md) · [Release verification](../releases/web-accounts.md)
 
 ## Known limits
 

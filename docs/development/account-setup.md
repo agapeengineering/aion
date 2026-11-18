@@ -1,6 +1,6 @@
 # Local email-code signup/login
 
-This opt-in preview uses real PostgreSQL, HTTPS cookies and a local SMTP capture inbox. It does not configure Resend, send external email or change the deployed R1 site. Complete [backend setup](backend-setup.md) first, including disposable local database configuration and web dependencies.
+This opt-in local preview uses PostgreSQL, HTTPS cookies and a local SMTP capture inbox. Complete the backend setup first, including the disposable database configuration and web dependencies. [Backend setup](backend-setup.md) · [Public release](../releases/web-accounts.md)
 
 From the repository root:
 

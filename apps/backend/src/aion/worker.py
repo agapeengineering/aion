@@ -4,27 +4,17 @@ import argparse
 import logging
 import signal
 import threading
-import time
-from pathlib import Path
 
 from sqlalchemy.exc import SQLAlchemyError
 
 from aion.auth import AuthService, utc_now
+from aion.check import HEARTBEAT
+from aion.check import heartbeat_fresh as heartbeat_fresh
 from aion.config import Settings
 from aion.database import is_ready, make_engine
 from aion.reminder_delivery import deliver_reminders, schedule_due
 from aion.resend_mail import ResendSender
 from aion.verification_mail import LocalCapture, Sender, cleanup_expired, deliver_pending
-
-HEARTBEAT = Path("/tmp/aion-worker-heartbeat")
-
-
-def heartbeat_fresh() -> bool:
-    try:
-        age = time.time() - HEARTBEAT.stat().st_mtime
-        return 0 <= age < 45
-    except OSError:
-        return False
 
 
 def main() -> int:
@@ -56,7 +46,15 @@ def main() -> int:
                 try:
                     cleanup_expired(engine, utc_now())
                     if auth is not None and sender is not None:
-                        deliver_pending(engine, auth.keys, sender, utc_now())
+                        deliver_pending(
+                            engine,
+                            auth.keys,
+                            sender,
+                            utc_now(),
+                            daily_limit=settings.resend_daily_limit
+                            if settings.resend_enabled
+                            else None,
+                        )
                         schedule_due(auth, utc_now())
                         deliver_reminders(auth, sender, utc_now())
                 except SQLAlchemyError:

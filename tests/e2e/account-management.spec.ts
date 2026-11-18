@@ -38,6 +38,7 @@ async function login(page: Page, request: APIRequestContext, es: boolean, email:
     .getByRole('button', { name: es ? 'Verificar correo' : 'Verify email', exact: true })
     .click();
   await expect(page.getByRole('status')).toContainText(email);
+  await expect(page).toHaveURL(new URL(es ? '/es/account' : '/account', page.url()).href);
 }
 for (const es of [false, true]) {
   test(`export, confirmed deletion, cache clearing and guest preservation (${es ? 'ES' : 'EN'})`, async ({

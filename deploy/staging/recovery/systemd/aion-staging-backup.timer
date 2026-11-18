@@ -1,0 +1,10 @@
+[Unit]
+Description=Twice-daily Aion staging database and key backup
+
+[Timer]
+OnCalendar=*-*-* 06,18:00:00 UTC
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

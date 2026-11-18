@@ -1,6 +1,6 @@
 # ADR-0002: Optional account backend and same-origin EC2 deployment
 
-Status: **Accepted — implementation and migration pending**. Date: 2026-10-17. Owner: Agape Engineering. Applies to [R2 specification](../../requirements/backend-release-specification.md); not deployed.
+Agape Engineering accepted this decision on 17 October 2026. The account and sync deployment went live on 18 November 2026. [R2 specification](../../requirements/backend-release-specification.md) · [Account release](../../releases/web-accounts.md)
 
 ## Context
 
@@ -11,8 +11,9 @@ R1 stores all settings on-device. Optional verified accounts would enable cross-
 - Add `apps/backend` to the existing monorepo: Python/FastAPI, uv lockfile, SQLAlchemy/Alembic and pytest. Keep React/TypeScript/Vite in `apps/web` and preserve the calendar contract/shared fixture corpus. Pin supported compatible dependencies at implementation time.
 - Implement one modular backend with auth, profiles, reminders, email adapters/templates, calendar and database/configuration modules. Select maintained compatible security components for the specified email-code/session flow; do not introduce custom cryptographic protocols. No general identity platform, microservices or admin dashboard initially.
 - Use one app-owned PostgreSQL database/role and durable outbox. One Python worker executes scheduling and delivery; API/worker run the same reviewed image with different entrypoints. Job claims/leases, constraints and retries live in PostgreSQL. Scheduling is not attached to every API process or a volatile request background task. Start without Redis/Celery.
-- Product Docker Compose services: `web` (built static UI server), `api`, `worker`, `postgres`. Keep persistent data in named volumes, DB/worker private, app containers non-root with measured resource/log limits and health checks. Shared host reverse proxy, bootstrap and cross-product routing belong in a separate infrastructure repository referencing product artifacts.
-- Canonical public origin stays `https://aion.agape.engineering`; shared proxy handles `/api/*` before frontend fallback, exposing FastAPI at `/api/v1`. UI lives at `/` and `/es`; no `/app` prefix or separate API hostname. Serve JSON errors for unknown API routes and bypass CDN caches for private/API responses. Same-origin cookies still require CSRF/Origin defenses.
+- Product Docker Compose services: `web` (built static UI server), `api`, `worker`, `postgres`. Keep persistent data in named volumes, DB/worker private, app containers non-root with measured resource/log limits and health checks. Host bootstrap and cross-product routing belong in a separate infrastructure repository referencing product artifacts.
+- The 2026-11-18 amendment gives Aion a dedicated Caddy origin proxy on the shared EC2 instance. Cloudflare Tunnel connects to its private HTTPS listener and verifies its certificate. Aion can roll back its routing and trust configuration independently of other applications on the host.
+- The canonical origin is `https://aion.agape.engineering`. Caddy sends `/api` and `/api/*` to FastAPI and all other paths to the static web server, including `/` and `/es`. The public API is served at `/api/v1` on that same origin. Unknown API routes return JSON. API responses bypass the CDN cache, and authenticated writes require origin and CSRF validation.
 - Migrate web serving from Workers Static Assets to the EC2 static container at a rehearsed cutover; Cloudflare remains DNS/proxy/CDN with encrypted authenticated origin traffic. Explicitly replace the existing Worker custom-domain attachment, preserve old static artifacts and verify origin reachability/TLS/cache controls before public auth is enabled. Do not expose an origin-bypass route that defeats access/rate controls.
 - Use Resend through a replaceable server-side adapter. Prefer a suitably owned Agape Engineering team administered through an existing login; team/plan eligibility and incremental costs are verified before configuration. Selected sending domain: `mail.agape.engineering`; sender: `Aion <aion@mail.agape.engineering>`. Configure real support contact, domain authentication, application/environment credentials, signed webhooks and opt-out without open/click tracking.
 - Keep one versioned phrase bank consumed by both runtimes and run the unchanged shared calendar corpus against Python as well as TypeScript. Web clocks use device timezone; emails use saved reminder timezone and label their snapshot.
@@ -52,6 +53,6 @@ Record clean source/image digests, schema compatibility, configuration reference
 
 ## Status and revisit triggers
 
-This accepted ADR supersedes ADR-0001's static-only/no-account portions for R2 implementation. ADR-0001 continues to describe the deployed R1 release until the verified migration. Align repository instructions, current product/privacy docs, API contract, CI/tests and runbooks as R2 is implemented; preserve existing release records.
+ADR-0002 governs the account release. ADR-0001 documents the historical static guest deployment. Preserve each release record when updating product, API, verification and operations documentation.
 
-Revisit when measured resource contention, missed recovery/scheduling targets, email volume, authentication requirements or independent availability needs exceed this topology. The architecture decision was accepted on 2026-10-17; no implementation, provider configuration or migration evidence is asserted here.
+Revisit when measured resource contention, missed recovery or scheduling targets, email volume, authentication requirements or independent availability needs exceed this topology.

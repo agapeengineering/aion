@@ -864,7 +864,9 @@ tbody .selected-unit th {
     width: calc(100% - 40px);
   }
   .site-header {
-    height: 84px;
+    height: auto;
+    min-height: 84px;
+    gap: 12px;
   }
   .brand {
     font-size: 31px;
@@ -874,7 +876,9 @@ tbody .selected-unit th {
     margin-left: 14px;
   }
   .site-header nav {
-    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0 12px;
   }
   .header-edit {
     font-size: 0;
